@@ -1,0 +1,13 @@
+[project]
+name = "fzjax"
+version = "0.0.1"
+dependencies = [
+    'jax'
+]
+authors = [
+    { name="Viet Anh Khoa Tran", email="mail@ktran.de"}
+]
+requires-python = ">=3.9"
+
+[build-system]
+requires = ["setuptools"]
