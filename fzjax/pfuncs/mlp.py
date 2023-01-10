@@ -51,18 +51,19 @@ class MLPParams:
                 )
             )
             if use_bn:
-                bn_params.append(BatchNormParams.create(shape=(1, dim, 1), **bn_kwargs))
+                bn_params.append(BatchNormParams.create(shape=(1, dim), **bn_kwargs))
             dim_in = dim
         return MLPParams(linear_params, bn_params, activation)
 
 
 def mlp(
     params: MLPParams, inputs: Float[Array, "N InC"], is_training: bool = False
-) -> Float[Array, "N OutC"]:
+) -> tuple[Float[Array, "N OutC"], Any]:
     x = inputs
+    bn_states = None
     for p_linear, p_bn in itertools.zip_longest(params.linear_params, params.bn_params):
         x = linear(p_linear, x)
         if p_bn is not None:
-            x = batch_norm(p_bn, x, is_training)
+            x, bn_states = batch_norm(p_bn, x, is_training)
         x = params.activation(x)
-    return x
+    return x, bn_states

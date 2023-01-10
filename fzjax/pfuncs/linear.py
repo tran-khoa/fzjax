@@ -31,7 +31,7 @@ class LinearParams:
         wkey, bkey = jax.random.split(rng)
 
         return LinearParams(
-            weights=initializer((out_features, in_features), wkey),
+            weights=initializer((in_features, out_features), wkey),
             biases=initializer(
                 (out_features,), bkey, pseudo_shape=(out_features, in_features)
             ),
@@ -41,7 +41,7 @@ class LinearParams:
 def linear(
     params: LinearParams, x: Float[Array, "... InC"]
 ) -> Float[Array, "... OutC"]:
-    x = params.weights @ x
+    x = x @ params.weights
     if params.biases is not None:
         x = x + params.biases
     return x

@@ -11,9 +11,10 @@ from typing import Annotated, Any, Container, TypeVar
 
 import jax.numpy as jnp
 from jax import tree_util
+from typing_extensions import dataclass_transform
 
 from fzjax.named_tree import registry
-from fzjax.named_tree.registry import FlattenNode
+from fzjax.named_tree.registry import FlattenNode, JDC_DIFF_MARKER, JDC_META_MARKER, JDC_NODIFF_MARKER
 
 try:
     # Attempt to import flax for serialization. The exception handling lets us drop
@@ -22,19 +23,21 @@ try:
 except ImportError:
     serialization = None  # type: ignore
 
-JDC_META_MARKER = "__fzjax_pytree_static_field__"
-JDC_DIFF_MARKER = "__fzjax_pytree_differentiable_field__"
-
 # Stolen from here: https://github.com/google/jax/issues/10476
-StaticT = TypeVar("StaticT")
-Meta = Static = Annotated[StaticT, JDC_META_MARKER]
+MetaT = TypeVar("MetaT")
+Meta = Static = Annotated[MetaT, JDC_META_MARKER]
 
 DiffT = TypeVar("DiffT", jnp.ndarray, Container[jnp.ndarray])
 Diff = Differentiable = Annotated[DiffT, JDC_DIFF_MARKER]
 
+# Explicitly marks node and its children as non-differentiable, overriding Differentiable
+NoDiffT = TypeVar("NoDiffT", jnp.ndarray, Container[jnp.ndarray])
+NoDiff = Annotated[NoDiffT, JDC_NODIFF_MARKER]
+
 T = TypeVar("T")
 
 
+@dataclass_transform()
 def fzjax_dataclass(cls: type[T]) -> type[T]:
     """
     This function is a modification of jax_dataclasses "_register_pytree_dataclass".

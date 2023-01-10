@@ -10,10 +10,31 @@ T = TypeVar("T")
 _T = TypeVar("_T")
 
 
-@dataclass(frozen=True)
+JDC_META_MARKER = "__fzjax_pytree_static_field__"
+JDC_DIFF_MARKER = "__fzjax_pytree_differentiable_field__"
+JDC_NODIFF_MARKER = "__fzjax_pytree_nondifferentiable_field__"
+
+
+def _meta_postprocessing(meta: tuple[str]) -> tuple[str]:
+
+    # If nodiff detected, remove diff marker.
+    if JDC_NODIFF_MARKER in meta:
+        return tuple(m for m in meta if m != JDC_DIFF_MARKER)
+
+    if JDC_META_MARKER in meta and JDC_DIFF_MARKER in meta:
+        raise ValueError("Node is marked as both Meta and Differentiable!")
+
+    return meta
+
+
+@dataclass(frozen=False, init=False)
 class FlattenLeaf(Generic[_T]):
     val: _T
-    meta: tuple[str] = tuple()
+    meta: tuple[str]
+
+    def __init__(self, val: _T, meta: tuple[str] = tuple()):
+        self.val = val
+        self.meta = _meta_postprocessing(meta)
 
     def with_val(self, val: _T):
         return FlattenLeaf(val, self.meta)

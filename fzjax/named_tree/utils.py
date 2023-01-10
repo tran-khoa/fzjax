@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Callable, Collection, TypeVar
 
-from .dataclass import JDC_DIFF_MARKER
-from .registry import FlattenLeaf, named_flatten, named_unflatten
+from .registry import FlattenLeaf, JDC_DIFF_MARKER, named_flatten, named_unflatten
 
 T = TypeVar("T")
 
@@ -53,7 +52,8 @@ def named_tree_update(obj: T, changes: dict[str, Any]) -> T:
 
 
 def named_tree_filter(
-    obj: Any, predicate: Callable[[str, FlattenLeaf], bool], flat_pytree: bool = False
+    obj: Any, predicate: Callable[[str, FlattenLeaf], bool],
+    as_flatten_leaves: bool = False
 ) -> dict[str, Any]:
     fmap, clz = named_flatten(obj)
     fmap = {k: v for k, v in fmap.items() if predicate(k, v)}
@@ -63,22 +63,22 @@ def named_tree_filter(
         if k is None or any(fk.startswith(k) for fk in fmap.keys())
     }
 
-    if flat_pytree:
+    if not as_flatten_leaves:
         return {k: v.val for k, v in fmap.items()}
     return named_unflatten(fmap, clz, with_fallback=True)
 
 
 def named_tree_by_annotation(
-    obj: Any, annotation: type[Annotated], flat_pytree: bool = False
+    obj: Any, annotation: type[Annotated]
 ) -> dict[str, Any]:
     annotations_str = annotation.__metadata__[0]
     return named_tree_filter(
-        obj, lambda _, v: annotations_str in v.meta, flat_pytree=flat_pytree
+        obj, lambda _, v: annotations_str in v.meta
     )
 
 
 def named_tree_differentiable(
-    obj: T, subset: Collection[str] | None, flat_pytree: bool = False
+    obj: T, subset: Collection[str] | None = None, flat_pytree: bool = False
 ) -> dict[str, Any]:
     def predicate(prefix: str, leaf: FlattenLeaf):
         return (
@@ -87,4 +87,4 @@ def named_tree_differentiable(
             and (leaf.val is not None)
         )
 
-    return named_tree_filter(obj, predicate, flat_pytree=flat_pytree)
+    return named_tree_filter(obj, predicate)
