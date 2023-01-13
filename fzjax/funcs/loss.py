@@ -1,17 +1,22 @@
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Integer
 
 
+@jax.jit
 def softmax_cross_entropy(logits: Float[Array, "N C"], labels: Integer[Array, "N"]):
     one_hot: Float[Array, "N C"] = jax.nn.one_hot(labels, logits.shape[-1])
     return -jnp.sum(jax.nn.log_softmax(logits) * one_hot, axis=-1)
 
 
+@jax.jit
 def mse_loss(preds: Float[Array, "N"], labels: Integer[Array, "N"]):
     return jnp.mean(jnp.square(preds - labels))
 
 
+@partial(jax.jit, static_argnames="axis")
 def cosine_similarity(
     x1: Float[Array, "*"],
     x2: Float[Array, "*"],
@@ -31,6 +36,7 @@ def cosine_similarity(
     return jnp.sum((x1 / x1_norm) * (x2 / x2_norm), axis=axis)
 
 
+@jax.jit
 def simclr(projs: Float[Array, "N C"], temperature: float = 0.1) -> Float[Array, ""]:
     """
     SimCLR loss function as proposed in
@@ -42,13 +48,17 @@ def simclr(projs: Float[Array, "N C"], temperature: float = 0.1) -> Float[Array,
     Args:
         projs: (batch_size, dim)
             Projected representations.
+
+            Expects the first half of the batch to correspond to the first view of each image,
+            and second half to the second view of each image, i.e. for images 1...N:
+
+            [1A ... NA 1B ... NB]
         temperature:
             Softmax rescaling, lower values force more extreme attraction/repulsion.
 
     Returns:
         SimCLR loss funtion
     """
-    projs = projs[jnp.concatenate([jnp.arange(projs.shape[0] // 2) * 2, jnp.arange(projs.shape[0] // 2) * 2 + 1])]
 
     sim_mat: Float[Array, "N N"] = cosine_similarity(
         projs[:, None, :], projs[None, :, :], axis=-1

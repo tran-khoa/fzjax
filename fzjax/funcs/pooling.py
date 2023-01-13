@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from functools import partial
 from typing import Sequence
 
+import jax
 import jax.lax as lax
 import jax.numpy as jnp
 
@@ -28,11 +30,11 @@ def _pool_infer_shape(
         return tuple(size)
 
 
+@partial(jax.jit, static_argnames=("window_shape", "strides", "channel_axis"))
 def max_pool(
     value: jnp.ndarray,
     window_shape: int | Sequence[int],
     strides: int | Sequence[int],
-    padding: str,
     channel_axis: int | None = -1,
 ) -> jnp.ndarray:
     """
@@ -49,10 +51,7 @@ def max_pool(
     Returns:
         Pooled result. Same rank as value.
     """
-    if padding not in ("SAME", "VALID"):
-        raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
-
     window_shape = _pool_infer_shape(value, window_shape, channel_axis)
     strides = _pool_infer_shape(value, strides, channel_axis)
 
-    return lax.reduce_window(value, -jnp.inf, lax.max, window_shape, strides, padding)
+    return lax.reduce_window(value, -jnp.inf, lax.max, window_shape, strides, "SAME")

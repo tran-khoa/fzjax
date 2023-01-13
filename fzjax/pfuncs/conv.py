@@ -61,6 +61,7 @@ class Conv2dParams:
         return self.filters.shape[0]
 
 
+@jax.jit
 def conv2d(
     params: Conv2dParams, x: Float[Array, "N InC InH InW"]
 ) -> Float[Array, "N OutC OutH OutW"]:

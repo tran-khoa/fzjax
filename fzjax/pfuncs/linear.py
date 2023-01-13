@@ -38,6 +38,7 @@ class LinearParams:
         )
 
 
+@jax.jit
 def linear(
     params: LinearParams, x: Float[Array, "... InC"]
 ) -> Float[Array, "... OutC"]:

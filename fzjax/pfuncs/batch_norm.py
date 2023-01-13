@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from typing import Any
 
+import jax
 import jax.lax as lax
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Integer
@@ -63,6 +65,7 @@ class BatchNormParams:
         )
 
 
+@partial(jax.jit, static_argnames=("is_training", "compute_stats"))
 def batch_norm(
     params: BatchNormParams,
     inputs: Float[Array, "*axes"],

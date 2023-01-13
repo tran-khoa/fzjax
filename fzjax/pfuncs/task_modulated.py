@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import jax
 import jax.numpy as jnp
 from jax.random import PRNGKeyArray
 from jaxtyping import Array, Float
@@ -45,6 +46,7 @@ class TMConv2dParams(Conv2dParams):
         )
 
 
+@jax.jit
 def tm_conv2d(
     params: TMConv2dParams,
     x: Float[Array, "N InC H W"],

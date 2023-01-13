@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Collection
 
 import jax.random
@@ -64,6 +65,7 @@ class MLPParams:
         return MLPParams(linear_params, bn_params, activation)
 
 
+@partial(jax.jit, static_argnames="is_training")
 def mlp(
     params: MLPParams, inputs: Float[Array, "N InC"], is_training: bool = False
 ) -> tuple[Float[Array, "N OutC"], Any]:
