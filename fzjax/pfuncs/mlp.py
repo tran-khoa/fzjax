@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass
-from typing import Any, Callable, Collection
+from typing import Any, Collection
 
 import jax.random
 from jax.random import PRNGKeyArray
 from jaxtyping import Array, Float
 
-from fzjax import Meta, fzjax_dataclass
+from fzjax import Meta, funcs, fzjax_dataclass
 from fzjax.initializers import Initializer
 from fzjax.pfuncs import BatchNormParams, batch_norm
 from fzjax.pfuncs.linear import LinearParams, linear
@@ -20,7 +20,7 @@ class MLPParams:
     linear_params: list[LinearParams]
     bn_params: list[BatchNormParams]
 
-    activation: Meta[Callable]
+    activation: Meta[str]
 
     @classmethod
     def create(
@@ -32,7 +32,7 @@ class MLPParams:
         bn_kwargs: dict[str, Any] | None = None,
         *,
         initializer: Initializer,
-        activation: Callable = jax.nn.relu,
+        activation: str = "relu",
         rng: PRNGKeyArray,
     ) -> MLPParams:
 
@@ -65,5 +65,5 @@ def mlp(
         x = linear(p_linear, x)
         if p_bn is not None:
             x, bn_states = batch_norm(p_bn, x, is_training)
-        x = params.activation(x)
+        x = funcs.activation(params.activation, x)
     return x, bn_states

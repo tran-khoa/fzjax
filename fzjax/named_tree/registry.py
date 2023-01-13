@@ -73,7 +73,7 @@ _registry: dict[type, _RegistryEntry] = {
     ),
     dict: _RegistryEntry(
         lambda xs: FlattenNode(tuple(xs.keys()), tuple(xs.values())),
-        lambda xs: dict(zip(xs.keys(), xs.values())),
+        lambda xs: dict(zip(xs.keys, xs.vals)),
     ),
 }
 
@@ -114,12 +114,15 @@ def named_flatten(
         else:
             assert isinstance(_node, FlattenNode)
             clz[prefix] = type(_obj)
-            for node_prefix, node_obj, node_meta in itertools.zip_longest(
-                reversed(_node.keys), reversed(_node.vals), reversed(_node.meta)
-            ):
-                if prefix is not None:
-                    node_prefix = f"{prefix}.{node_prefix}"
-                stack.append((node_prefix, node_obj, meta + (node_meta or tuple())))
+            if not _node.keys:
+                flattened[prefix] = FlattenLeaf(val=_obj)
+            else:
+                for node_prefix, node_obj, node_meta in itertools.zip_longest(
+                    reversed(_node.keys), reversed(_node.vals), reversed(_node.meta)
+                ):
+                    if prefix is not None:
+                        node_prefix = f"{prefix}.{node_prefix}"
+                    stack.append((node_prefix, node_obj, meta + (node_meta or tuple())))
 
     return flattened, clz
 

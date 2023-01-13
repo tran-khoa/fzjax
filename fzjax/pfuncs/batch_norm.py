@@ -69,7 +69,7 @@ def batch_norm(
     is_training: bool = False,
     compute_stats: bool = False,
 ) -> tuple[Float[Array, "*axes"], BatchNormStates]:
-    r_axes = [i for i in params.shape if i == -1]
+    r_axes = [i for i, v in enumerate(params.shape) if v == 1]
 
     new_state = params.states
     if compute_stats or is_training:

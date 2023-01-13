@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 import jax.lax as lax
 import jax.numpy as jnp
@@ -21,7 +21,7 @@ class Conv2dParams:
 
     stride: Meta[int]
     groups: Meta[int]
-    padding: str
+    padding: Meta[str]
 
     dtype: Meta[Any]
 

@@ -6,7 +6,8 @@ from typing import Optional
 import pytest
 
 from fzjax import Differentiable, Meta, fzjax_dataclass
-from fzjax.named_tree.registry import (FlattenLeaf, JDC_DIFF_MARKER, JDC_META_MARKER, named_flatten,
+from fzjax.named_tree.registry import (JDC_DIFF_MARKER, JDC_META_MARKER,
+                                       FlattenLeaf, named_flatten,
                                        named_unflatten)
 from fzjax.named_tree.utils import named_tree_differentiable, named_tree_update
 

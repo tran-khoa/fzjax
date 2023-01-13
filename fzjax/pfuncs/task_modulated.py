@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import dataclasses
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 import jax.numpy as jnp
 from jax.random import PRNGKeyArray
@@ -57,8 +56,8 @@ def tm_conv2d(
     if shifts is not None:
         x = x - shifts
     if gains is not None:
-        x = x - (1 + gains)
+        x = x * (1 + gains)
     if biases is not None:
-        x = x - biases
+        x = x + biases
 
     return x

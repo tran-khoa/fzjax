@@ -14,7 +14,8 @@ from jax import tree_util
 from typing_extensions import dataclass_transform
 
 from fzjax.named_tree import registry
-from fzjax.named_tree.registry import FlattenNode, JDC_DIFF_MARKER, JDC_META_MARKER, JDC_NODIFF_MARKER
+from fzjax.named_tree.registry import (JDC_DIFF_MARKER, JDC_META_MARKER,
+                                       JDC_NODIFF_MARKER, FlattenNode)
 
 try:
     # Attempt to import flax for serialization. The exception handling lets us drop
@@ -141,7 +142,7 @@ def fzjax_dataclass(cls: type[T]) -> type[T]:
                     )
                 value = getattr(x, name)
                 value_state = state.pop(name)
-                updates[name] = serialization.from_state_dict(value, value_state)
+                updates[name] = serialization.from_state_dict(value, value_state, name)
             if state:
                 names = ",".join(state.keys())
                 raise ValueError(
