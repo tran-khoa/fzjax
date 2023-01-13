@@ -26,7 +26,7 @@ class MLPParams:
     def create(
         cls,
         in_features: int,
-        out_features: Collection[int],
+        out_features: list[int],
         use_bias: bool = True,
         use_bn: bool = True,
         bn_kwargs: dict[str, Any] | None = None,
@@ -43,7 +43,7 @@ class MLPParams:
         bn_params = []
         linear_params = []
 
-        for dim in out_features:
+        for dim in out_features[:-1]:
             rng, lin_rng = jax.random.split(rng)
             linear_params.append(
                 LinearParams.create(
@@ -53,6 +53,14 @@ class MLPParams:
             if use_bn:
                 bn_params.append(BatchNormParams.create(shape=(1, dim), **bn_kwargs))
             dim_in = dim
+
+        rng, lin_rng = jax.random.split(rng)
+        linear_params.append(
+            LinearParams.create(
+                dim_in, out_features[-1], use_bias=use_bias, initializer=initializer, rng=lin_rng
+            )
+        )
+
         return MLPParams(linear_params, bn_params, activation)
 
 
@@ -61,9 +69,10 @@ def mlp(
 ) -> tuple[Float[Array, "N OutC"], Any]:
     x = inputs
     bn_states = None
-    for p_linear, p_bn in itertools.zip_longest(params.linear_params, params.bn_params):
+    for p_linear, p_bn in itertools.zip_longest(params.linear_params[:-1], params.bn_params[:-1]):
         x = linear(p_linear, x)
         if p_bn is not None:
             x, bn_states = batch_norm(p_bn, x, is_training)
         x = funcs.activation(params.activation, x)
+    x = linear(params.linear_params[-1], x)
     return x, bn_states

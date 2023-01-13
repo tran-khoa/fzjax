@@ -48,13 +48,8 @@ def simclr(projs: Float[Array, "N C"], temperature: float = 0.1) -> Float[Array,
     Returns:
         SimCLR loss funtion
     """
-    # now instead using impl from
-    #
+    projs = projs[jnp.concatenate([jnp.arange(projs.shape[0] // 2) * 2, jnp.arange(projs.shape[0] // 2) * 2 + 1])]
 
-    # (A1 B1 C1 ... Z1 A2 B2 C2 ...)
-    # (B1 ...)
-    # (...)
-    # (A2 ...)
     sim_mat: Float[Array, "N N"] = cosine_similarity(
         projs[:, None, :], projs[None, :, :]
     )
@@ -65,7 +60,8 @@ def simclr(projs: Float[Array, "N C"], temperature: float = 0.1) -> Float[Array,
     sim_mat = sim_mat.at[diag_range, diag_range].set(-9e15)
 
     # positive examples
-    pos_logits = sim_mat[diag_range, jnp.roll(diag_range, projs.shape[0] // 2)]
+    shifted_diag = jnp.roll(diag_range, projs.shape[0] // 2)
+    pos_logits = sim_mat[diag_range, shifted_diag]
 
     nll = -pos_logits + jax.nn.logsumexp(sim_mat, axis=-1)
     nll = nll.mean()
