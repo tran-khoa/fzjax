@@ -51,7 +51,7 @@ def simclr(projs: Float[Array, "N C"], temperature: float = 0.1) -> Float[Array,
     projs = projs[jnp.concatenate([jnp.arange(projs.shape[0] // 2) * 2, jnp.arange(projs.shape[0] // 2) * 2 + 1])]
 
     sim_mat: Float[Array, "N N"] = cosine_similarity(
-        projs[:, None, :], projs[None, :, :]
+        projs[:, None, :], projs[None, :, :], axis=-1
     )
     sim_mat /= temperature
 
