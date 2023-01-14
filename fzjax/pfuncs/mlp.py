@@ -70,11 +70,12 @@ def mlp(
     params: MLPParams, inputs: Float[Array, "N InC"], is_training: bool = False
 ) -> tuple[Float[Array, "N OutC"], Any]:
     x = inputs
-    bn_states = None
-    for p_linear, p_bn in itertools.zip_longest(params.linear_params[:-1], params.bn_params[:-1]):
+    bn_states = []
+    for p_linear, p_bn in itertools.zip_longest(params.linear_params[:-1], params.bn_params):
         x = linear(p_linear, x)
         if p_bn is not None:
-            x, bn_states = batch_norm(p_bn, x, is_training)
+            x, bn_state = batch_norm(p_bn, x, is_training)
+            bn_states.append(bn_state)
         x = funcs.activation(params.activation, x)
     x = linear(params.linear_params[-1], x)
     return x, bn_states

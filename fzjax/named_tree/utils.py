@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Callable, Collection, TypeVar
+from typing import Annotated, Any, Callable, Collection, Optional, TypeVar
 
 from .registry import (JDC_DIFF_MARKER, FlattenLeaf, named_flatten,
                        named_unflatten)
@@ -66,6 +66,12 @@ def named_tree_filter(
     }
 
     return fmap, clz
+
+
+def named_tree_select(
+        obj: Any, paths: Optional[Collection[str]] = None, return_values: bool = True
+):
+    return named_tree_filter(obj, lambda p, _: any(p.startswith(q) for q in paths), return_values)
 
 
 def named_tree_by_annotation(
