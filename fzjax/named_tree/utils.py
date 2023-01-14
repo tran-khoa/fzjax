@@ -45,8 +45,8 @@ def named_tree_update(obj: T, changes: dict[str, Any]) -> T:
             for x in with_prefix_clz:
                 clz.pop(x)
             new_fmap, new_clz = named_flatten(v)
-            fmap.update({(f"{k}.{kk}" if kk else k): vv for kk, vv in new_fmap.items()})
-            clz.update({(f"{k}.{kk}" if kk else k): vv for kk, vv in new_clz.items()})
+            fmap.update({(f"{k}.{kk}" if kk is not None else k): vv for kk, vv in new_fmap.items()})
+            clz.update({(f"{k}.{kk}" if kk is not None else k): vv for kk, vv in new_clz.items()})
         else:
             fmap[k] = fmap[k].with_val(v)
     return named_unflatten(fmap, clz)
