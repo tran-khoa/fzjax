@@ -50,7 +50,11 @@ class MLPParams:
             rng, lin_rng = jax.random.split(rng)
             linear_params.append(
                 LinearParams.create(
-                    dim_in, dim, use_bias=use_bias, initializer=initializer, rng=lin_rng
+                    in_features=dim_in,
+                    out_features=dim,
+                    use_bias=use_bias,
+                    initializer=initializer,
+                    rng=lin_rng
                 )
             )
             if use_bn:
@@ -60,15 +64,19 @@ class MLPParams:
         rng, lin_rng = jax.random.split(rng)
         linear_params.append(
             LinearParams.create(
-                dim_in,
-                out_features[-1],
+                in_features=dim_in,
+                out_features=out_features[-1],
                 use_bias=use_bias,
                 initializer=initializer,
                 rng=lin_rng,
             )
         )
 
-        return MLPParams(linear_params, bn_params, activation)
+        return MLPParams(
+            linear_params=linear_params,
+            bn_params=bn_params,
+            activation=activation
+        )
 
 
 @partial(jax.jit, static_argnames="is_training")
