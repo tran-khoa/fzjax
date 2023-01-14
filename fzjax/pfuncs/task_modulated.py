@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import jax
-import jax.numpy as jnp
 from jax.random import PRNGKeyArray
 from jaxtyping import Array, Float
 
@@ -25,7 +23,6 @@ class TMConv2dParams(Conv2dParams):
         kernel_size: int,
         stride: int = 1,
         groups: int = 1,
-        dtype: Any = jnp.float32,
         *,
         initializer: Initializer,
         rng: PRNGKeyArray,
@@ -39,7 +36,6 @@ class TMConv2dParams(Conv2dParams):
             stride=stride,
             groups=groups,
             padding="SAME",
-            dtype=dtype,
             use_bias=False,
             initializer=initializer,
             rng=rng,

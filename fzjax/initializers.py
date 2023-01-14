@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass
 from typing import Protocol
 
+import chex
 import jax
 import jax.numpy as jnp
 from jax.random import PRNGKeyArray
@@ -21,7 +22,7 @@ class Initializer(Protocol):
 
 
 def compute_fans(shape, fan_in_axes=None):
-    """Computes the number of input and output units for a weight shape."""
+    """Adapted from PyTorch. Computes the number of input and output units for a weight shape."""
     if len(shape) < 1:
         fan_in = fan_out = 1
     elif len(shape) == 1:
@@ -114,7 +115,7 @@ class KaimingUniformInitializer(Initializer):
     a: float = 0
     mode: str = "fan_in"
     nonlinearity: str = "leaky_relu"
-    dtype: jnp.dtype = jnp.float32
+    dtype: chex.ArrayDType = jnp.float32
 
     def __call__(
         self,

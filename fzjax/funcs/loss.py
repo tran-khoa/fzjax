@@ -4,6 +4,8 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Integer
 
+from .misc import normalize
+
 
 @jax.jit
 def softmax_cross_entropy(logits: Float[Array, "N C"], labels: Integer[Array, "N"]):
@@ -37,7 +39,7 @@ def cosine_similarity(
 
 
 @jax.jit
-def simclr(projs: Float[Array, "N C"], temperature: float = 0.1) -> Float[Array, ""]:
+def simclr(projs: Float[Array, "NA C"], temperature: float = 0.1) -> Float[Array, ""]:
     """
     SimCLR loss function as proposed in
     "A Simple Framework for Contrastive Learning of Visual Representations" (Chen et al., 2020)
@@ -76,3 +78,38 @@ def simclr(projs: Float[Array, "N C"], temperature: float = 0.1) -> Float[Array,
     nll = -pos_logits + jax.nn.logsumexp(sim_mat, axis=-1)
     nll = nll.mean()
     return nll
+
+
+def barlow_twins(
+    projs: Float[Array, "NA C"], weight_off_diagonal: float = 5 * 10**-3
+):
+    """
+    Barlow Twins loss function as proposed in
+    "Barlow Twins: Self-Supervised Learning via Redundancy Reduction" (Zbontar et al., 2021)
+
+    Args:
+        projs: (batch_size, dim)
+            Projected representations.
+
+            Expects the first half of the batch to correspond to the first view of each image,
+            and second half to the second view of each image, i.e. for images 1...N:
+
+            [1A ... NA 1B ... NB]
+        weight_off_diagonal:
+            Weighting (lambda) of the redundancy reduction term, equation 1.
+
+    Returns:
+        SimCLR loss funtion
+    """
+    batch_size: int = projs.shape[0] // 2
+    num_channels: int = projs.shape[1]
+
+    projs = projs.reshape((2, batch_size, num_channels))
+    projs = jax.vmap(normalize)(projs)
+
+    ccm = jnp.matmul(projs.T, projs) / batch_size
+    ccm = jnp.square(ccm - jnp.identity(num_channels, dtype=ccm.dtype))
+
+    diag_range = jnp.arange(projs.shape[0], dtype=jnp.int32)
+    ccm = ccm.at[diag_range, diag_range].multiply(weight_off_diagonal)
+    return jnp.sum(ccm)

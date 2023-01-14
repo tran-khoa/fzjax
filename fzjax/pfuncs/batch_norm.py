@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import partial
-from typing import Any
 
+import chex
 import jax
 import jax.lax as lax
 import jax.numpy as jnp
@@ -37,7 +37,7 @@ class BatchNormParams:
     def create(
         cls,
         shape: tuple[int, ...],
-        dtype: Any = jnp.float32,
+        dtype: chex.ArrayDType = jnp.float32,
         decay_rate: float = 0.999,
         eps: float = 1e-5,
     ) -> BatchNormParams:

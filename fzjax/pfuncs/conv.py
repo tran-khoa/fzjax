@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 import jax.lax as lax
 import jax.numpy as jnp
@@ -23,8 +23,6 @@ class Conv2dParams:
     groups: Meta[int]
     padding: Meta[str]
 
-    dtype: Meta[Any]
-
     @classmethod
     def create(
         cls,
@@ -34,7 +32,6 @@ class Conv2dParams:
         stride: int = 1,
         groups: int = 1,
         padding: str = "SAME",
-        dtype: Any = jnp.float32,
         *,
         use_bias: bool = False,
         initializer: Initializer,
@@ -56,7 +53,6 @@ class Conv2dParams:
             stride=stride,
             groups=groups,
             padding=padding,
-            dtype=dtype,
         )
 
     @property
