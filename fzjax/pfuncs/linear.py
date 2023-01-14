@@ -34,7 +34,7 @@ class LinearParams:
             weights=initializer((in_features, out_features), wkey),
             biases=initializer(
                 (out_features,), bkey, pseudo_shape=(out_features, in_features)
-            ),
+            ) if use_bias else None,
         )
 
 
