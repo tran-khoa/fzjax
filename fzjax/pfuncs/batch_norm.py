@@ -9,11 +9,10 @@ import jax.lax as lax
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Integer
 
-from fzjax.named_tree.dataclass import Differentiable, Meta, fzjax_dataclass
+from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
 
 
 @fzjax_dataclass
-@dataclass(frozen=True)
 class BatchNormStates:
     mean_average: Float[Array, "*axes"]
     var_average: Float[Array, "*axes"]

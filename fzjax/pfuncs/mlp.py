@@ -3,16 +3,18 @@ from __future__ import annotations
 import itertools
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Collection
+from typing import Any
 
 import jax.random
 from jax.random import PRNGKeyArray
 from jaxtyping import Array, Float
 
-from fzjax import Meta, funcs, fzjax_dataclass
+import fzjax.funcs as funcs
 from fzjax.initializers import Initializer
-from fzjax.pfuncs import BatchNormParams, batch_norm
-from fzjax.pfuncs.linear import LinearParams, linear
+from fzjax.ptree import Meta, fzjax_dataclass
+
+from .batch_norm import BatchNormParams, batch_norm
+from .linear import LinearParams, linear
 
 
 @fzjax_dataclass
@@ -58,7 +60,11 @@ class MLPParams:
         rng, lin_rng = jax.random.split(rng)
         linear_params.append(
             LinearParams.create(
-                dim_in, out_features[-1], use_bias=use_bias, initializer=initializer, rng=lin_rng
+                dim_in,
+                out_features[-1],
+                use_bias=use_bias,
+                initializer=initializer,
+                rng=lin_rng,
             )
         )
 
@@ -71,7 +77,9 @@ def mlp(
 ) -> tuple[Float[Array, "N OutC"], Any]:
     x = inputs
     bn_states = []
-    for p_linear, p_bn in itertools.zip_longest(params.linear_params[:-1], params.bn_params):
+    for p_linear, p_bn in itertools.zip_longest(
+        params.linear_params[:-1], params.bn_params
+    ):
         x = linear(p_linear, x)
         if p_bn is not None:
             x, bn_state = batch_norm(p_bn, x, is_training)

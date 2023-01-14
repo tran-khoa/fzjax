@@ -8,9 +8,9 @@ import jax.numpy as jnp
 from jax.random import PRNGKeyArray
 from jaxtyping import Array, Float
 
-from fzjax import fzjax_dataclass
+from fzjax.initializers import Initializer
+from fzjax.ptree import fzjax_dataclass
 
-from ..initializers import Initializer
 from .conv import Conv2dParams, conv2d
 
 

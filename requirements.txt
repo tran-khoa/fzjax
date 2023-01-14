@@ -1,2 +1,4 @@
 jax
 jaxtyping
+chex
+dm-tree

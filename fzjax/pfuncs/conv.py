@@ -9,8 +9,8 @@ import jax.random
 from jax.random import PRNGKeyArray
 from jaxtyping import Array, Float
 
-from fzjax import Differentiable, Meta, fzjax_dataclass
 from fzjax.initializers import Initializer
+from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
 
 
 @fzjax_dataclass
@@ -50,7 +50,14 @@ class Conv2dParams:
                 (out_filters,), rng=bkey, pseudo_shape=(out_filters, in_filters)
             )
 
-        return cls(filters, biases, stride, groups, padding, dtype)
+        return cls(
+            filters=filters,
+            biases=biases,
+            stride=stride,
+            groups=groups,
+            padding=padding,
+            dtype=dtype,
+        )
 
     @property
     def in_filters(self):

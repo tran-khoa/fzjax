@@ -7,8 +7,8 @@ import jax.random
 from jax.random import PRNGKeyArray
 from jaxtyping import Array, Float
 
-from fzjax import Differentiable, fzjax_dataclass
 from fzjax.initializers import Initializer
+from fzjax.ptree import Differentiable, fzjax_dataclass
 
 
 @fzjax_dataclass
@@ -34,7 +34,9 @@ class LinearParams:
             weights=initializer((in_features, out_features), wkey),
             biases=initializer(
                 (out_features,), bkey, pseudo_shape=(out_features, in_features)
-            ) if use_bias else None,
+            )
+            if use_bias
+            else None,
         )
 
 
