@@ -57,7 +57,7 @@ def ptree_flatten(obj: Any, with_annotations: bool = True) -> dict[str, Annotate
 
     tree.traverse_with_path(register_annotation_prefix, obj)
     annotated_paths = {
-        annotation: set(".".join(path) for path in paths)
+        annotation: set(".".join(map(str, path)) for path in paths)
         for annotation, paths in annotated_paths.items()
     }
 
