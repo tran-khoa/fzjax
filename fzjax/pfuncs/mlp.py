@@ -54,7 +54,7 @@ class MLPParams:
                     out_features=dim,
                     use_bias=use_bias,
                     initializer=initializer,
-                    rng=lin_rng
+                    rng=lin_rng,
                 )
             )
             if use_bn:
@@ -73,9 +73,7 @@ class MLPParams:
         )
 
         return MLPParams(
-            linear_params=linear_params,
-            bn_params=bn_params,
-            activation=activation
+            linear_params=linear_params, bn_params=bn_params, activation=activation
         )
 
 

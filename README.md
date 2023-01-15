@@ -11,10 +11,10 @@ As a structured and typed container for `pfunc` parameters, we provide `@fzjax_d
 which can be used as a native `dataclasses.dataclass`.[^1]
 
 
-## Named Trees and fzjax_dataclasses
-We provide an alternative to `jax.tree_utils.flatten`, which flattens pytrees by name
+## ptrees and fzjax_dataclasses
+We provide an alternative to `jax.tree_utils.flatten`, which flattens pytrees by path
 (i.e. dataclass property names, dictionary keys but also list and tuple indices).
-Other classes are treated as leaves, unless registered separately.
+The implementation is based on `chex.dataclasses` and `dm-tree`.
 
 For example:
 
@@ -36,20 +36,22 @@ is flattened as
 }
 ```
 
-This facilitates generating and modifying subsets of treedefs. 
+This facilitates generating and modifying subsets of trees. 
 
 ### Annotations
 Annotations are passed onto every child node.
 
 The `Meta` annotation moves parameters into the treedef (equivalent to `jdc.Static` [^1]).
-The `Differentiable` annotation marks parameters for the `named_tree_differentiable` function,
+The `Differentiable` annotation marks parameters for the `ptree_differentiable` function,
 e.g.
 ```python
-named_tree_differential(p) = {
+ptree_differentiable(p) = {
     "weights.0": w1,
     "weights.1": w2
 }
 ```
+The `NoDiff` annotation marks itself and its children as non-differentiable, overriding
+`Differentiable` annotations.
 
 ### Higher Functions
 This alternative formulation now allows computing the gradient of a function **w.r.t. parts of a PyTree**).
@@ -75,5 +77,5 @@ class Params:
     ...
 ```
 
-[^1] Shamelessly stolen and adapted from the great [jax_dataclasses](https://github.com/brentyi/jax_dataclasses) library.
-[^2] https://youtrack.jetbrains.com/issue/PY-54560
+[^1]: Shamelessly stolen and adapted from the great [jax_dataclasses](https://github.com/brentyi/jax_dataclasses) library.
+[^2]: https://youtrack.jetbrains.com/issue/PY-54560
