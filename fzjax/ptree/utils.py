@@ -83,12 +83,22 @@ def ptree_unflatten(
 def ptree_update(obj: T, changes: dict[str, Any]) -> T:
     remaining = set(changes.keys())
 
+    changes = {k: v if v is not None else tree.MAP_TO_NONE for k, v in changes.items()}
+
     def update(path: tuple, _obj: Any):
         path_str = ".".join(map(str, path))
+
+        # Stop depth traversal if current path is not a prefix of any needle
+        if not any(change.startswith(path_str) for change in changes):
+            return _obj if _obj is not None else tree.MAP_TO_NONE
+
+        # Found replacement, stopping depth traversal
         if path_str in changes:
             remaining.remove(path_str)
-
             return changes[path_str]
+
+        # Continue
+        return None
 
     return tree.traverse_with_path(update, obj)
 
