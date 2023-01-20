@@ -3,13 +3,20 @@ from __future__ import annotations
 import dataclasses
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import (Annotated, Any, Callable, Collection, Generic, Optional,
-                    TypeVar, Union)
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Collection,
+    Generic,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 import tree
 
-from .annotations import (JDC_DIFF_MARKER, JDC_NODIFF_MARKER,
-                          post_process_annotations)
+from .annotations import JDC_DIFF_MARKER, JDC_NODIFF_MARKER, post_process_annotations
 from .internal_helpers import get_type_hints_partial
 
 FallbackT = TypeVar("FallbackT", list, tuple, dict)

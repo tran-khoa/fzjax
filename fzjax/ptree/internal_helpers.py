@@ -4,8 +4,7 @@ import collections
 import functools
 import sys
 import types
-from types import (MethodDescriptorType, MethodWrapperType,
-                   WrapperDescriptorType)
+from types import MethodDescriptorType, MethodWrapperType, WrapperDescriptorType
 from typing import Any
 
 

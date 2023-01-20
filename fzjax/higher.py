@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from typing import (Any, Callable, Collection, Iterable, Optional, TypeVar,
-                    Union)
+from typing import Any, Callable, Collection, Iterable, Optional, TypeVar, Union
 
 import jax
 from typing_extensions import Concatenate, ParamSpec
 
-from fzjax.ptree import (JDC_META_MARKER, ptree_differentiable, ptree_filter,
-                         ptree_update)
+from fzjax.ptree import (
+    JDC_META_MARKER,
+    ptree_differentiable,
+    ptree_filter,
+    ptree_update,
+)
 
 P = TypeVar("P")
 PS = ParamSpec("PS")

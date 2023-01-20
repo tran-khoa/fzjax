@@ -5,10 +5,18 @@ from typing import Optional
 
 import pytest
 
-from fzjax.ptree import (JDC_DIFF_MARKER, JDC_META_MARKER, AnnotatedLeaf,
-                         Differentiable, Meta, fzjax_dataclass,
-                         ptree_differentiable, ptree_flatten, ptree_unflatten,
-                         ptree_update)
+from fzjax.ptree import (
+    JDC_DIFF_MARKER,
+    JDC_META_MARKER,
+    AnnotatedLeaf,
+    Differentiable,
+    Meta,
+    fzjax_dataclass,
+    ptree_differentiable,
+    ptree_flatten,
+    ptree_unflatten,
+    ptree_update,
+)
 
 
 @fzjax_dataclass
