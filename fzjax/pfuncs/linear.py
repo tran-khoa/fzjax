@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import typing
 from dataclasses import dataclass
 from typing import Optional
 
 import jax.random
-from jax.random import PRNGKeyArray
-from jaxtyping import Array, Float
 
-from fzjax.initializers import Initializer
 from fzjax.ptree import Differentiable, fzjax_dataclass
+
+if typing.TYPE_CHECKING:
+    from jax.random import PRNGKeyArray
+    from jaxtyping import Array, Float
+    from fzjax.initializers import Initializer
 
 
 @fzjax_dataclass

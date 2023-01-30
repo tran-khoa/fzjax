@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import os
+import typing
 import warnings
 
 import jax.numpy as jnp
@@ -6,7 +9,10 @@ import pytest
 from jax.lib import xla_bridge
 
 from fzjax.higher import pfunc_jit, pfunc_value_and_grad
-from fzjax.ptree import Differentiable, Donate
+
+if typing.TYPE_CHECKING:
+    from fzjax.ptree import Differentiable, Donate
+
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing
 from dataclasses import dataclass
 from functools import partial
 
@@ -7,9 +8,11 @@ import chex
 import jax
 import jax.lax as lax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Integer
 
 from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
+
+if typing.TYPE_CHECKING:
+    from jaxtyping import Array, Float, Integer
 
 
 @fzjax_dataclass

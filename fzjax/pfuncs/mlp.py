@@ -1,20 +1,23 @@
 from __future__ import annotations
 
 import itertools
+import typing
 from dataclasses import dataclass
 from functools import partial
 from typing import Any, Sequence
 
 import jax.random
-from jax.random import PRNGKeyArray
-from jaxtyping import Array, Float
 
 import fzjax.funcs as funcs
-from fzjax.initializers import Initializer
 from fzjax.ptree import Meta, fzjax_dataclass
 
 from .batch_norm import BatchNormParams, batch_norm
 from .linear import LinearParams, linear
+
+if typing.TYPE_CHECKING:
+    from jax.random import PRNGKeyArray
+    from jaxtyping import Array, Float
+    from fzjax.initializers import Initializer
 
 
 @fzjax_dataclass

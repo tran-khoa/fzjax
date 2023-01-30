@@ -1,10 +1,15 @@
+from __future__ import annotations
+
+import typing
 from functools import partial
 
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Integer
 
 from .misc import normalize
+
+if typing.TYPE_CHECKING:
+    from jaxtyping import Array, Float, Integer
 
 
 @jax.jit

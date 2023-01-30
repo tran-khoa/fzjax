@@ -6,12 +6,15 @@ import functools
 import inspect
 import sys
 import types
+import typing
 from collections import OrderedDict, defaultdict
-from inspect import Parameter
 from types import MethodDescriptorType, MethodWrapperType, WrapperDescriptorType
 from typing import Any, Callable
 
 from .annotations import ANNOTATIONS
+
+if typing.TYPE_CHECKING:
+    from inspect import Parameter
 
 
 @functools.lru_cache(maxsize=128)

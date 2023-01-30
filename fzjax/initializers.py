@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import math
+import typing
 from dataclasses import dataclass
 from typing import Protocol
 
 import chex
 import jax
 import jax.numpy as jnp
-from jax.random import PRNGKeyArray
+
+if typing.TYPE_CHECKING:
+    from jax.random import PRNGKeyArray
 
 
 class Initializer(Protocol):

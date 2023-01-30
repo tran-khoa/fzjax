@@ -1,9 +1,14 @@
+from __future__ import annotations
+
+import typing
 from functools import partial
 
 import jax
 import jax.lax as lax
 import jax.numpy as jnp
-from jaxtyping import Array, Float
+
+if typing.TYPE_CHECKING:
+    from jaxtyping import Array, Float
 
 
 @partial(jax.jit, static_argnames="axis")
