@@ -210,6 +210,6 @@ def ptree_differentiable(
 ) -> dict[str, AnnotatedLeaf]:
     predicate = DifferentiablePredicate()
     if subset:
-        predicate += SelectPredicate(subset)
+        predicate *= SelectPredicate(subset)
 
     return ptree_filter(obj, predicate, return_values)
