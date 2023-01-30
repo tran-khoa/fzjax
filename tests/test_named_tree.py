@@ -43,17 +43,17 @@ def test_flatten_unflatten(dummies):
 
     ref_flattened = {
         "meta": AnnotatedLeaf(val=1, annotations=(JDC_META_MARKER,)),
-        "state": AnnotatedLeaf(val=0.2, annotations=tuple()),
+        "state": AnnotatedLeaf(val=0.2, annotations=()),
         "param.1": AnnotatedLeaf(val=0.2, annotations=(JDC_DIFF_MARKER,)),
         "param.0": AnnotatedLeaf(val=0.1, annotations=(JDC_DIFF_MARKER,)),
         "nested.meta": AnnotatedLeaf(val=1, annotations=(JDC_META_MARKER,)),
-        "nested.state": AnnotatedLeaf(val=0.2, annotations=tuple()),
+        "nested.state": AnnotatedLeaf(val=0.2, annotations=()),
         "nested.param.0": AnnotatedLeaf(val=0.1, annotations=(JDC_DIFF_MARKER,)),
         "nested.nested.meta": AnnotatedLeaf(val=1, annotations=(JDC_META_MARKER,)),
-        "nested.nested.state": AnnotatedLeaf(val=0.2, annotations=tuple()),
+        "nested.nested.state": AnnotatedLeaf(val=0.2, annotations=()),
         "nested.nested.param.1": AnnotatedLeaf(val=0.4, annotations=(JDC_DIFF_MARKER,)),
         "nested.nested.param.0": AnnotatedLeaf(val=0.1, annotations=(JDC_DIFF_MARKER,)),
-        "nested.nested.nested": AnnotatedLeaf(val=None, annotations=tuple()),
+        "nested.nested.nested": AnnotatedLeaf(val=None, annotations=()),
     }
     assert flattened == ref_flattened
 

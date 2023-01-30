@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Optional
 
 import jax.random
 from jax.random import PRNGKeyArray
@@ -16,7 +16,7 @@ from fzjax.ptree import Differentiable, fzjax_dataclass
 class LinearParams:
 
     weights: Differentiable[Float[Array, "OutC InC"]]
-    biases: Differentiable[Union[Float[Array, "OutC"], None]]
+    biases: Differentiable[Optional[Float[Array, "OutC"]]]
 
     @classmethod
     def create(

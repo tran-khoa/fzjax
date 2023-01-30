@@ -1,18 +1,22 @@
 from .annotations import (
     JDC_DIFF_MARKER,
+    JDC_DONATE_MARKER,
     JDC_META_MARKER,
     JDC_NODIFF_MARKER,
-    JDC_DONATE_MARKER,
     Diff,
     Differentiable,
+    Donate,
     Meta,
     NoDiff,
     Static,
-    Donate,
 )
 from .dataclass import fzjax_dataclass
 from .utils import (
     AnnotatedLeaf,
+    AnnotationPredicate,
+    DifferentiablePredicate,
+    Predicate,
+    SelectPredicate,
     ptree_by_annotation,
     ptree_differentiable,
     ptree_filter,
@@ -20,10 +24,6 @@ from .utils import (
     ptree_select,
     ptree_unflatten,
     ptree_update,
-    Predicate,
-    SelectPredicate,
-    AnnotationPredicate,
-    DifferentiablePredicate
 )
 
 __all__ = [
@@ -49,5 +49,5 @@ __all__ = [
     "Predicate",
     "SelectPredicate",
     "AnnotationPredicate",
-    "DifferentiablePredicate"
+    "DifferentiablePredicate",
 ]

@@ -66,9 +66,7 @@ def fzjax_dataclass(cls: type[T]) -> type[T]:
 
         field_type = type_from_name[field.name]
 
-        fields_metadata[field.name] = tuple(
-            getattr(field_type, "__metadata__", tuple())
-        )
+        fields_metadata[field.name] = tuple(getattr(field_type, "__metadata__", ()))
 
         # Handle Meta[] annotation by moving metadata into PyTreeDef
         if JDC_META_MARKER in fields_metadata[field.name]:
@@ -96,11 +94,10 @@ def fzjax_dataclass(cls: type[T]) -> type[T]:
     if serialization is not None:
 
         def _to_state_dict(x: T):
-            state_dict = {
+            return {
                 name: serialization.to_state_dict(getattr(x, name))
                 for name in child_node_field_names
             }
-            return state_dict
 
         def _from_state_dict(x: T, state: dict):
             # Copy the state so we can pop the restored fields.

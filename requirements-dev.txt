@@ -2,3 +2,12 @@ pytest
 black
 isort
 tox
+
+mypy
+flake8
+flake8-bugbear
+flake8-comprehensions
+flake8-pie
+flake8-simplify
+flake8-implicit-str-concat
+flake8-tuple

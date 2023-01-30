@@ -49,16 +49,15 @@ ANNOTATIONS = {
 }
 
 
-def post_process_annotations(_annotations: tuple[str]) -> tuple[str]:
+def post_process_annotations(annotations: tuple[str, ...]) -> tuple[str, ...]:
+    """
+    Returns a version of annotations that coheres to "Order of annotations".
+    """
 
-    # If nodiff detected, remove diff marker.
-    if JDC_NODIFF_MARKER in _annotations:
-        _annotations = tuple(m for m in _annotations if m != JDC_DIFF_MARKER)
+    if JDC_NODIFF_MARKER in annotations or JDC_META_MARKER in annotations:
+        annotations = tuple(m for m in annotations if m != JDC_DIFF_MARKER)
 
-    elif JDC_META_MARKER in _annotations and JDC_DIFF_MARKER in _annotations:
-        _annotations = tuple(m for m in _annotations if m != JDC_DIFF_MARKER)
+    if JDC_META_MARKER in annotations:
+        annotations = tuple(m for m in annotations if m != JDC_DONATE_MARKER)
 
-    elif JDC_META_MARKER in _annotations and JDC_DONATE_MARKER in _annotations:
-        _annotations = tuple(m for m in _annotations if m != JDC_DONATE_MARKER)
-
-    return _annotations
+    return annotations

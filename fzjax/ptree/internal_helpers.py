@@ -120,19 +120,18 @@ def fzjax_datacls_from_func(func: Callable) -> Any:
     from fzjax.ptree import fzjax_dataclass
 
     # Replace any unresolvable names with _UnresolvableForwardReference.
-    base_globals: dict[str, Any] = defaultdict(
-        lambda: _UnresolvableForwardReference
-    )
+    base_globals: dict[str, Any] = defaultdict(lambda: _UnresolvableForwardReference)
     base_globals.update(__builtins__)  # type: ignore
     base_globals.update(ANNOTATIONS)
 
     # noinspection PyProtectedMember
-    signature = list((k, eval(v.annotation, base_globals)) if v.annotation != inspect._empty else (k, Any)
-                     for k, v in get_func_signature(func).items())
-    datacls = dataclasses.make_dataclass(
-        f"func{id(func)}",
-        signature
-    )
+    signature = [
+        (k, eval(v.annotation, base_globals))
+        if v.annotation != inspect._empty
+        else (k, Any)
+        for k, v in get_func_signature(func).items()
+    ]
+    datacls = dataclasses.make_dataclass(f"func{id(func)}", signature)
 
     # noinspection PyTypeChecker
     return fzjax_dataclass(datacls)

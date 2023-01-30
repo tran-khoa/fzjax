@@ -1,23 +1,12 @@
 from __future__ import annotations
 
 import dataclasses
-import typing
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import (
-    Annotated,
-    Any,
-    Callable,
-    Collection,
-    Generic,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Annotated, Any, Collection, Generic, TypeVar, Union
 
 import tree
-from typing_extensions import Self
 
 from .annotations import JDC_DIFF_MARKER, JDC_NODIFF_MARKER, post_process_annotations
 from .internal_helpers import get_type_hints_partial
@@ -32,7 +21,7 @@ class AnnotatedLeaf(Generic[_T]):
     val: _T
     meta: tuple[str]
 
-    def __init__(self, val: _T, annotations: tuple[str] = tuple()):
+    def __init__(self, val: _T, annotations: tuple[str, ...] = ()):
         self.val = val
         self.meta = post_process_annotations(annotations)
 
@@ -55,7 +44,7 @@ def ptree_flatten(obj: Any, with_annotations: bool = True) -> dict[str, Annotate
                     continue
 
                 field_type = type_from_name[field.name]
-                for annotation in list(getattr(field_type, "__metadata__", list())):
+                for annotation in list(getattr(field_type, "__metadata__", ())):
                     annotated_paths[annotation].append(prefix + (field.name,))
 
     def annotate(path: str, val: Any) -> AnnotatedLeaf:
@@ -67,7 +56,7 @@ def ptree_flatten(obj: Any, with_annotations: bool = True) -> dict[str, Annotate
 
     tree.traverse_with_path(register_annotation_prefix, obj)
     annotated_paths = {
-        annotation: set(".".join(map(str, path)) for path in paths)
+        annotation: {".".join(map(str, path)) for path in paths}
         for annotation, paths in annotated_paths.items()
     }
 
@@ -85,7 +74,8 @@ def ptree_unflatten(
     else:
         assert isinstance(flattened, dict)
         flattened = [
-            v.val if isinstance(v, AnnotatedLeaf) else v for k, v in sorted(flattened.items())
+            v.val if isinstance(v, AnnotatedLeaf) else v
+            for k, v in sorted(flattened.items())
         ]
     return tree.unflatten_as(structure, flattened)
 
@@ -114,6 +104,7 @@ def ptree_update(obj: T, changes: dict[str, Any]) -> T:
 
 
 class Predicate(ABC):
+    @abstractmethod
     def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
         ...
 
@@ -133,7 +124,6 @@ class Predicate(ABC):
 
 
 class OrPredicate(Predicate):
-
     def __init__(self, *predicates: Predicate):
         self.predicates = predicates
 
@@ -142,7 +132,6 @@ class OrPredicate(Predicate):
 
 
 class AndPredicate(Predicate):
-
     def __init__(self, *predicates: Predicate):
         self.predicates = predicates
 
@@ -170,9 +159,11 @@ class AnnotationPredicate(Predicate):
 
 class DifferentiablePredicate(Predicate):
     def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
-        return (JDC_DIFF_MARKER in leaf.meta
-                and JDC_NODIFF_MARKER not in leaf.meta
-                and (leaf.val is not None))
+        return (
+            JDC_DIFF_MARKER in leaf.meta
+            and JDC_NODIFF_MARKER not in leaf.meta
+            and (leaf.val is not None)
+        )
 
 
 class NonNullPredicate(Predicate):
@@ -199,18 +190,13 @@ def ptree_filter(
         flattened dict
     """
     fmap = ptree_flatten(obj)
-    fmap = {
+    return {
         k: v.val if return_values else v for k, v in fmap.items() if predicate(k, v)
     }
-    return fmap
 
 
-def ptree_select(
-    obj: Any, paths: Collection[str], return_values: bool = True
-):
-    return ptree_filter(
-        obj, SelectPredicate(paths), return_values
-    )
+def ptree_select(obj: Any, paths: Collection[str], return_values: bool = True):
+    return ptree_filter(obj, SelectPredicate(paths), return_values)
 
 
 def ptree_by_annotation(

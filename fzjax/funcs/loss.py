@@ -76,8 +76,7 @@ def simclr(projs: Float[Array, "NA C"], temperature: float = 0.1) -> Float[Array
     pos_logits = sim_mat[diag_range, shifted_diag]
 
     nll = -pos_logits + jax.nn.logsumexp(sim_mat, axis=-1)
-    nll = nll.mean()
-    return nll
+    return nll.mean()
 
 
 def barlow_twins(

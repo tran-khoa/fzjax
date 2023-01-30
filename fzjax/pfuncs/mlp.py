@@ -73,7 +73,9 @@ class MLPParams:
         )
 
         return MLPParams(
-            linear_params=tuple(linear_params), bn_params=tuple(bn_params), activation=activation
+            linear_params=tuple(linear_params),
+            bn_params=tuple(bn_params),
+            activation=activation,
         )
 
 
