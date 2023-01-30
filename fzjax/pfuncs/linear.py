@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union
+from typing import Any, Union
 
 import jax.random
 from jax.random import PRNGKeyArray

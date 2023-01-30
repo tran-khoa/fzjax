@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
+import typing
+from abc import ABC
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import (
@@ -15,6 +17,7 @@ from typing import (
 )
 
 import tree
+from typing_extensions import Self
 
 from .annotations import JDC_DIFF_MARKER, JDC_NODIFF_MARKER, post_process_annotations
 from .internal_helpers import get_type_hints_partial
@@ -82,7 +85,7 @@ def ptree_unflatten(
     else:
         assert isinstance(flattened, dict)
         flattened = [
-            v.val if isinstance(v, AnnotatedLeaf) else v for v in flattened.values()
+            v.val if isinstance(v, AnnotatedLeaf) else v for k, v in sorted(flattened.items())
         ]
     return tree.unflatten_as(structure, flattened)
 
@@ -110,9 +113,76 @@ def ptree_update(obj: T, changes: dict[str, Any]) -> T:
     return tree.traverse_with_path(update, obj)
 
 
+class Predicate(ABC):
+    def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
+        ...
+
+    def __or__(self, other: Predicate) -> OrPredicate:
+        assert isinstance(other, Predicate)
+        return OrPredicate(self, other)
+
+    def __and__(self, other: Predicate) -> AndPredicate:
+        assert isinstance(other, Predicate)
+        return AndPredicate(self, other)
+
+    def __add__(self, other: Predicate) -> OrPredicate:
+        return self.__or__(other)
+
+    def __mul__(self, other: Predicate) -> AndPredicate:
+        return self.__and__(other)
+
+
+class OrPredicate(Predicate):
+
+    def __init__(self, *predicates: Predicate):
+        self.predicates = predicates
+
+    def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
+        return any(p(path, leaf) for p in self.predicates)
+
+
+class AndPredicate(Predicate):
+
+    def __init__(self, *predicates: Predicate):
+        self.predicates = predicates
+
+    def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
+        return all(p(path, leaf) for p in self.predicates)
+
+
+class SelectPredicate(Predicate):
+    # noinspection PyProtocol
+    def __init__(self, paths: Collection[str]):
+        self.paths = paths
+
+    def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
+        return any(path.startswith(q) for q in self.paths)
+
+
+class AnnotationPredicate(Predicate):
+    # noinspection PyProtocol
+    def __init__(self, annotation: type[Annotated]):
+        self.annotations_str = annotation.__metadata__[0]
+
+    def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
+        return self.annotations_str in leaf.meta
+
+
+class DifferentiablePredicate(Predicate):
+    def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
+        return (JDC_DIFF_MARKER in leaf.meta
+                and JDC_NODIFF_MARKER not in leaf.meta
+                and (leaf.val is not None))
+
+
+class NonNullPredicate(Predicate):
+    def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
+        return leaf.val is not None
+
+
 def ptree_filter(
     obj: Any,
-    predicate: Callable[[str, AnnotatedLeaf], bool],
+    predicate: Predicate,
     return_values: bool = True,
 ) -> dict[str, Union[AnnotatedLeaf, Any]]:
     """
@@ -136,29 +206,24 @@ def ptree_filter(
 
 
 def ptree_select(
-    obj: Any, paths: Optional[Collection[str]] = None, return_values: bool = True
+    obj: Any, paths: Collection[str], return_values: bool = True
 ):
     return ptree_filter(
-        obj, lambda p, _: any(p.startswith(q) for q in paths), return_values
+        obj, SelectPredicate(paths), return_values
     )
 
 
 def ptree_by_annotation(
     obj: Any, annotation: type[Annotated], return_values: bool = True
 ) -> dict[str, AnnotatedLeaf]:
-    annotations_str = annotation.__metadata__[0]
-    return ptree_filter(obj, lambda _, v: annotations_str in v.meta, return_values)
+    return ptree_filter(obj, AnnotationPredicate(annotation), return_values)
 
 
 def ptree_differentiable(
-    obj: T, subset: Collection[str] | None = None, return_values: bool = True
+    obj: T, subset: Collection[str] = (), return_values: bool = True
 ) -> dict[str, AnnotatedLeaf]:
-    def predicate(prefix: str, leaf: AnnotatedLeaf):
-        return (
-            JDC_DIFF_MARKER in leaf.meta
-            and JDC_NODIFF_MARKER not in leaf.meta
-            and (not subset or any(prefix.startswith(q) for q in subset))
-            and (leaf.val is not None)
-        )
+    predicate = DifferentiablePredicate()
+    if subset:
+        predicate += SelectPredicate(subset)
 
     return ptree_filter(obj, predicate, return_values)

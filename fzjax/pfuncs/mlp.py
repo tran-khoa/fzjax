@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 from dataclasses import dataclass
 from functools import partial
-from typing import Any
+from typing import Any, Sequence
 
 import jax.random
 from jax.random import PRNGKeyArray
@@ -20,8 +20,8 @@ from .linear import LinearParams, linear
 @fzjax_dataclass
 @dataclass(frozen=True)
 class MLPParams:
-    linear_params: list[LinearParams]
-    bn_params: list[BatchNormParams]
+    linear_params: tuple[LinearParams, ...]
+    bn_params: tuple[BatchNormParams, ...]
 
     activation: Meta[str]
 
@@ -29,7 +29,7 @@ class MLPParams:
     def create(
         cls,
         in_features: int,
-        out_features: list[int],
+        out_features: Sequence[int],
         use_bias: bool = True,
         use_bn: bool = True,
         bn_kwargs: dict[str, Any] | None = None,
@@ -73,7 +73,7 @@ class MLPParams:
         )
 
         return MLPParams(
-            linear_params=linear_params, bn_params=bn_params, activation=activation
+            linear_params=tuple(linear_params), bn_params=tuple(bn_params), activation=activation
         )
 
 

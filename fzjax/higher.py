@@ -1,89 +1,136 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Collection, Iterable, Optional, TypeVar, Union
+import dataclasses
+from functools import wraps
+from typing import Callable, Collection, TypeVar, Union
 
 import jax
-from typing_extensions import Concatenate, ParamSpec
+from chex import ArrayTree
+from typing_extensions import ParamSpec
 
+from fzjax.ptree.internal_helpers import fzjax_datacls_from_func, get_func_signature
 from fzjax.ptree import (
-    JDC_META_MARKER,
-    ptree_differentiable,
+    Donate, ptree_differentiable,
     ptree_filter,
     ptree_update,
+    AnnotationPredicate,
+    SelectPredicate
 )
+from fzjax.ptree.utils import NonNullPredicate
 
 P = TypeVar("P")
 PS = ParamSpec("PS")
 
-R = TypeVar("R")
+R = TypeVar("R", ArrayTree, tuple[ArrayTree, ArrayTree])
+
+Selectors = Collection[str]
 
 
 def pfunc_value_and_grad(
-    pfunc: Callable[Concatenate[P, PS], R],
-    fields: Optional[Collection[str]] = None,
-    *jax_args,
-    **jax_kwargs,
-):
-    def target_func(
-        p: dict[str, Any], params: P, *args: PS.args, **kwargs: PS.kwargs
-    ) -> R:
-        new_params = ptree_update(params, p)
-        return pfunc(new_params, *args, **kwargs)
+        pfunc: Callable[PS, R],
+        diff_paths: Collection[str] = (),
+        return_diff_params: bool = False,
+        *jax_args,
+        argnums: None = None,
+        **jax_kwargs,
+) -> Callable[PS, Union[tuple[R, dict[str, ArrayTree]], tuple[tuple[R, dict[str, ArrayTree]]], ArrayTree]]:
+    """
+    Create a function that evaluates both ``pfunc`` and the gradient of ``pfunc``.
 
-    vag = jax.value_and_grad(target_func, *jax_args, argnums=0, **jax_kwargs)
+    Args:
+        pfunc: Function returning either a single pytree or a pair of pytrees.
+        diff_paths: selectors (see below)
+        return_diff_params: returns dictionary of differentiated parameters
+        *jax_args: positional arguments passed to jax.value_and_grad
+        argnums: throws exception if not None, use diff_paths instead
+        **jax_kwargs: keyword arguments passed to jax.value_and_grad
 
-    def new_vag(
-        params: P, *args: PS.args, **kwargs: PS.kwargs
-    ) -> tuple[R, dict[str, Any]]:
-        diff_params = ptree_differentiable(params, fields)
-        return vag(diff_params, params, *args, **kwargs)
+    Annotations:
+        Meta
+        Differentiable
+        NoDiff
 
-    return new_vag
+    Selectors:
+        Selectors start with one of the argument names, e.g.
+        ```python
+        def f(x, y, z):
+            ...
+
+        diff_paths = ["x.value", "y", "z"]
+        ```
+
+        If paths not given, all leaves marked as Differentiable will be selected.
+        If paths given, only Differentiable leaves of nodes selected by given paths are selected.
+
+        Annotations are always inherited to children and grandchildren.
+        NoDiff overrides previous Differentiable annotations.
+
+
+    Returns:
+        Values and gradient of selected inputs.
+    """
+
+    if argnums is not None:
+        raise ValueError("Cannot set argnums, use diff_paths instead.")
+
+    def _new_vag_func(*args: PS.args, **kwargs: PS.kwargs) -> Union[tuple[R, dict[str, ArrayTree]], tuple[tuple[R, dict[str, ArrayTree]]], ArrayTree]:
+        if getattr(_new_vag_func, "internal_func", None) is None:
+            def _helper_func(_sel, _p):
+                _p = ptree_update(_p, _sel)
+                return pfunc(**{f.name: getattr(_p, f.name) for f in dataclasses.fields(_p)})
+
+            _new_vag_func.internal_func = jax.value_and_grad(
+                _helper_func, *jax_args, argnums=0, **jax_kwargs)
+
+        if getattr(_new_vag_func, "datacls", None) is None:
+            _new_vag_func.datacls = fzjax_datacls_from_func(pfunc)
+
+        if getattr(_new_vag_func, "signature", None) is None:
+            _new_vag_func.signature = list(get_func_signature(pfunc).keys())
+
+        params = _new_vag_func.datacls(**{k: v for k, v in zip(_new_vag_func.signature, args)}, **kwargs)
+        diff_params = ptree_differentiable(params, diff_paths)
+        if return_diff_params:
+            return _new_vag_func.internal_func(diff_params, params), diff_params
+        return _new_vag_func.internal_func(diff_params, params)
+    return _new_vag_func
 
 
 def pfunc_jit(
-    pfunc: Callable[Concatenate[P, PS], R],
-    donate_argpaths: Optional[Collection[str]] = None,
-    donate_argnums: Union[int, Iterable[int]] = (),
-    static_argnums: Union[int, Iterable[int], None] = None,
-    **jax_kwargs,
-):
-    if not donate_argpaths:
-        return jax.jit(pfunc, **jax_kwargs)
+        pfunc: Callable[PS, R],
+        donate_paths: Selectors = (),
+        *jax_args,
+        static_argnums: None = None,
+        static_argnames: None = None,
+        donate_argnums: None = None,
+        **jax_kwargs,
+) -> Callable[PS, R]:
+    if any(x is not None for x in (static_argnums, static_argnames, donate_argnums)):
+        raise ValueError("Cannot use *_argnums and *_argnames parameters, "
+                         "use *_paths and annotations instead.")
 
-    if "static_argnames" in jax_kwargs:
-        raise ValueError("static_argnames not supported!")
+    @wraps(pfunc)
+    def _new_jit_func(*args: PS.args, **kwargs: PS.kwargs) -> R:
+        if getattr(_new_jit_func, "internal_func", None) is None:
+            def _helper_func(_sel, _p):
+                _p = ptree_update(_p, _sel)
 
-    if "donated_argnames" in jax_kwargs:
-        raise ValueError("donated_argnames not supported!")
+                return pfunc(**{f.name: getattr(_p, f.name) for f in dataclasses.fields(_p)})
 
-    def target_func(
-        p: dict[str, Any], params: P, *args: PS.args, **kwargs: PS.kwargs
-    ) -> R:
-        merged_params = ptree_update(params, p)  # is this even necessary?
-        return pfunc(merged_params, *args, **kwargs)
+            _new_jit_func.internal_func = jax.jit(
+                _helper_func, *jax_args, donate_argnums=0, **jax_kwargs)
+            _new_jit_func.lower = _new_jit_func.internal_func.lower
 
-    if isinstance(donate_argnums, int):
-        donate_argnums = (0, donate_argnums + 1)
-    else:
-        donate_argnums = (0,) + tuple(n + 1 for n in donate_argnums)
+        if getattr(_new_jit_func, "datacls", None) is None:
+            _new_jit_func.datacls = fzjax_datacls_from_func(pfunc)
 
-    if isinstance(static_argnums, int):
-        static_argnums = static_argnums + 1
-    elif isinstance(static_argnums, Iterable):
-        static_argnums = tuple(n + 1 for n in static_argnums)
+        if getattr(_new_jit_func, "signature", None) is None:
+            _new_jit_func.signature = list(get_func_signature(pfunc).keys())
 
-    def new_jit(params: P, *args: PS.args, **kwargs: PS.kwargs) -> R:
-        donated = ptree_filter(
-            params,
-            lambda p, v: any(p.startswith(q) for q in donate_argpaths)
-            and JDC_META_MARKER not in v.meta,
-        )
-        return jax.jit(
-            target_func,
-            static_argnums=static_argnums,
-            donate_argnums=donate_argnums,
-            **jax_kwargs,
-        )(donated, params, *args, **kwargs)
+        params = _new_jit_func.datacls(**{k: v for k, v in zip(_new_jit_func.signature, args)}, **kwargs)
 
-    return new_jit
+        predicate = NonNullPredicate() and (AnnotationPredicate(Donate) or SelectPredicate(donate_paths))
+        donate_params = ptree_filter(params, predicate)
+        return _new_jit_func.internal_func(donate_params, params)
+    return _new_jit_func
+

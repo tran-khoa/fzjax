@@ -1,0 +1,52 @@
+import os
+import warnings
+from dataclasses import dataclass
+from typing import Any
+
+import chex
+import pytest
+from jax.lib import xla_bridge
+
+from fzjax.higher import pfunc_jit, pfunc_value_and_grad
+from fzjax.ptree import Differentiable, fzjax_dataclass, Donate
+
+
+import jax.numpy as jnp
+
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+
+
+def test_pfunc_jit():
+
+    def f(donated: Donate, not_donated):
+        return donated + not_donated
+
+    jitted = pfunc_jit(f)
+    donated_arr = jnp.zeros((1,))
+    non_donated_arr = jnp.ones((1,))
+    assert jitted(donated_arr, non_donated_arr).item() == 1.
+    if xla_bridge.get_backend().platform in ("gpu", "tpu"):
+        with pytest.raises(RuntimeError):
+            print(donated_arr)
+    else:
+        warnings.warn("Cannot test pfunc_jit donation on CPU.")
+
+    assert non_donated_arr.item()
+
+
+def test_pfunc_value_and_grad():
+    def quadratic(x: Differentiable, y):
+        return x ** 2 + y
+    vag_func = pfunc_value_and_grad(quadratic)
+
+    value, grad = vag_func(2., 1.)
+    assert value.item() == 5.
+    assert grad["x"] == 4.
+    assert set(grad.keys()) == {"x"}
+
+    vag_func2 = pfunc_value_and_grad(quadratic, ["y"])
+    value, grad = vag_func2(2., 1.)
+
+    assert value.item() == 5.
+    assert grad["x"] == 4.
+    assert grad["y"] == 1.

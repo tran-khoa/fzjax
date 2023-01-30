@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import collections
+import dataclasses
 import functools
+import inspect
 import sys
 import types
+from collections import OrderedDict, defaultdict
+from inspect import Parameter
 from types import MethodDescriptorType, MethodWrapperType, WrapperDescriptorType
-from typing import Any
+from typing import Any, Callable
+
+from .annotations import ANNOTATIONS
 
 
 @functools.lru_cache(maxsize=128)
@@ -86,7 +92,14 @@ def get_type_hints_partial(obj, include_extras=False) -> dict[str, Any]:
     return hints
 
 
-class _UnresolvableForwardReference:
+class _UnresolvableForwardReferenceMeta(type):
+    def __getattr__(cls, item):
+        if item == "__metadata__":
+            return ()
+        return _UnresolvableForwardReference
+
+
+class _UnresolvableForwardReference(metaclass=_UnresolvableForwardReferenceMeta):
     def __class_getitem__(cls, item) -> type[_UnresolvableForwardReference]:
         """__getitem__ passthrough, for supporting generics."""
         return _UnresolvableForwardReference
@@ -101,3 +114,29 @@ _allowed_types = (
     MethodWrapperType,
     MethodDescriptorType,
 )
+
+
+def fzjax_datacls_from_func(func: Callable) -> Any:
+    from fzjax.ptree import fzjax_dataclass
+
+    # Replace any unresolvable names with _UnresolvableForwardReference.
+    base_globals: dict[str, Any] = defaultdict(
+        lambda: _UnresolvableForwardReference
+    )
+    base_globals.update(__builtins__)  # type: ignore
+    base_globals.update(ANNOTATIONS)
+
+    # noinspection PyProtectedMember
+    signature = list((k, eval(v.annotation, base_globals)) if v.annotation != inspect._empty else (k, Any)
+                     for k, v in get_func_signature(func).items())
+    datacls = dataclasses.make_dataclass(
+        f"func{id(func)}",
+        signature
+    )
+
+    # noinspection PyTypeChecker
+    return fzjax_dataclass(datacls)
+
+
+def get_func_signature(func: Callable) -> OrderedDict[str, Parameter]:
+    return OrderedDict(inspect.signature(func).parameters)
