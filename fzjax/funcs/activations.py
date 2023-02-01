@@ -1,6 +1,8 @@
-from typing import Protocol, TypeVar
+from __future__ import annotations
 
+from typing import TypeVar, Protocol, Callable
 import jax.nn
+
 
 T = TypeVar("T")
 
@@ -10,7 +12,7 @@ class ActivationFunction(Protocol[T]):
         ...
 
 
-ACTIVATIONS: dict[str, ActivationFunction] = {
+_registered_activations: dict[str, ActivationFunction] = {
     "identity": lambda x: x,
     "relu": jax.nn.relu,
     "relu6": jax.nn.relu6,
@@ -33,17 +35,21 @@ ACTIVATIONS: dict[str, ActivationFunction] = {
 }
 
 
+def is_valid_activation(func: str) -> bool:
+    return func in _registered_activations
+
+
 def activation(func: str, x: T) -> T:
-    if func not in ACTIVATIONS:
+    if func not in _registered_activations:
         raise ValueError(f"Invalid activation function {func}.")
-    return ACTIVATIONS[func](x)
+    return _registered_activations[func](x)
 
 
-def register_fzjax_activation(name: str):
-    def inner(func):
-        if name in ACTIVATIONS:
+def register_fzjax_activation(name: str) -> Callable[[T], T]:
+    def inner(func: T) -> T:
+        if name in _registered_activations:
             raise ValueError(f"Activation {name} already registered.")
-        ACTIVATIONS[name] = func
+        _registered_activations[name] = func
         return func
 
     return inner

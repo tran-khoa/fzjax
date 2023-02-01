@@ -42,6 +42,11 @@ class MLPParams:
         rng: PRNGKeyArray,
     ) -> MLPParams:
 
+        if not funcs.is_valid_activation(activation):
+            raise ValueError(f"Activation '{activation}' is not registered.")
+        if not out_features:
+            raise ValueError("out_features must have at least one element.")
+
         if bn_kwargs is None:
             bn_kwargs = {}
 
@@ -84,7 +89,7 @@ class MLPParams:
 
 @partial(jax.jit, static_argnames="is_training")
 def mlp(
-    params: MLPParams, inputs: Float[Array, "N InC"], is_training: bool = False
+    params: MLPParams, inputs: Float[Array, "N InC"], is_training: bool = False,
 ) -> tuple[Float[Array, "N OutC"], Any]:
     x = inputs
     bn_states = []

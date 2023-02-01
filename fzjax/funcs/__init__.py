@@ -1,4 +1,4 @@
-from .activations import activation
+from .activations import activation, is_valid_activation
 from .loss import (
     barlow_twins,
     cosine_similarity,

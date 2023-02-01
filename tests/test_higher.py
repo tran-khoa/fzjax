@@ -35,17 +35,17 @@ def test_pfunc_jit():
 
 
 def test_pfunc_value_and_grad():
-    def quadratic(x: Differentiable, y):
+    def quadratic(x: Differentiable, y: Differentiable):
         return x**2 + y
 
-    vag_func = pfunc_value_and_grad(quadratic)
+    vag_func = pfunc_value_and_grad(quadratic, ["x"])
 
     value, grad = vag_func(2.0, 1.0)
     assert value.item() == 5.0
     assert grad["x"] == 4.0
     assert set(grad.keys()) == {"x"}
 
-    vag_func2 = pfunc_value_and_grad(quadratic, ["y"])
+    vag_func2 = pfunc_value_and_grad(quadratic, ["x", "y"])
     value, grad = vag_func2(2.0, 1.0)
 
     assert value.item() == 5.0

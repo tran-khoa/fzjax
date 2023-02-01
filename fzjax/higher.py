@@ -85,13 +85,11 @@ def pfunc_value_and_grad(
         tuple[R, dict[str, ArrayTree]], tuple[tuple[R, dict[str, ArrayTree]]], ArrayTree
     ]:
         if getattr(_new_vag_func, "internal_func", None) is None:
-
             def _helper_func(_sel, _p):
                 _p = ptree_update(_p, _sel)
                 return pfunc(
                     **{f.name: getattr(_p, f.name) for f in dataclasses.fields(_p)}
                 )
-
             _new_vag_func.internal_func = jax.value_and_grad(
                 _helper_func, *jax_args, argnums=0, **jax_kwargs
             )
