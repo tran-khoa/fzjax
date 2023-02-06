@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Sequence
+from typing import Optional, Sequence, Union
 
 import jax
 import jax.lax as lax
 import jax.numpy as jnp
+
+from fzjax.higher import pfunc_jit
+from fzjax.ptree import Meta
 
 
 def _pool_infer_shape(
@@ -30,12 +33,12 @@ def _pool_infer_shape(
         return tuple(size)
 
 
-@partial(jax.jit, static_argnames=("window_shape", "strides", "channel_axis"))
+@pfunc_jit
 def max_pool(
     value: jnp.ndarray,
-    window_shape: int | Sequence[int],
-    strides: int | Sequence[int],
-    channel_axis: int | None = -1,
+    window_shape: Meta[Union[int, Sequence[int]]],
+    strides: Meta[Union[int, Sequence[int]]],
+    channel_axis: Meta[Optional[int]] = -1,
 ) -> jnp.ndarray:
     """
     Adapted from dm-haiku. Max pool.

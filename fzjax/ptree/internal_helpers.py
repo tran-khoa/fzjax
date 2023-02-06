@@ -127,14 +127,22 @@ def fzjax_datacls_from_func(func: Callable) -> Any:
     base_globals.update(__builtins__)  # type: ignore
     base_globals.update(ANNOTATIONS)
 
-    # noinspection PyProtectedMember
-    signature = [
-        (k, eval(v.annotation, base_globals))
-        if v.annotation != inspect._empty
-        else (k, Any)
-        for k, v in get_func_signature(func).items()
-    ]
-    datacls = dataclasses.make_dataclass(f"func{id(func)}", signature)
+    signature = []
+
+    for argname, param in get_func_signature(func).items():
+        annotation = Any
+        default = dataclasses.MISSING
+
+        # noinspection PyProtectedMember
+        if param.annotation != inspect._empty:
+            annotation = eval(param.annotation, base_globals)
+        # noinspection PyProtectedMember
+        if param.default != inspect._empty:
+            default = param.default
+
+        signature.append((argname, annotation, dataclasses.field(default=default)))
+
+    datacls = dataclasses.make_dataclass(f"fzjax_datacls_func{id(func)}", signature)
 
     # noinspection PyTypeChecker
     return fzjax_dataclass(datacls)

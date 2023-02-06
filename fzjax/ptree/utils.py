@@ -196,6 +196,7 @@ def ptree_filter(
 
 
 def ptree_select(obj: Any, paths: Collection[str], return_values: bool = True):
+
     return ptree_filter(obj, SelectPredicate(paths), return_values)
 
 

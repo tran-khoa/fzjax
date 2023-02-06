@@ -7,6 +7,8 @@ import jax
 import jax.numpy as jnp
 
 from .misc import normalize
+from ..higher import pfunc_jit
+from ..ptree import Meta
 
 if typing.TYPE_CHECKING:
     from jaxtyping import Array, Float, Integer
@@ -23,24 +25,24 @@ def mse_loss(preds: Float[Array, "N"], labels: Integer[Array, "N"]):
     return jnp.mean(jnp.square(preds - labels))
 
 
-@partial(jax.jit, static_argnames="axis")
+@pfunc_jit
 def cosine_similarity(
     x1: Float[Array, "*"],
     x2: Float[Array, "*"],
-    axis: int = 1,
+    axis: Meta[int] = 1,
     eps: float = 1e-8,
 ) -> Float[Array, "*"]:
 
-    x1_squared_norm = jnp.sum(jnp.square(x1), axis=axis, keepdims=True)
-    x2_squared_norm = jnp.sum(jnp.square(x2), axis=axis, keepdims=True)
+    x1_sqnorm = jnp.sum(jnp.square(x1), axis=axis, keepdims=True)
+    x2_sqnorm = jnp.sum(jnp.square(x2), axis=axis, keepdims=True)
 
-    x1_squared_norm = jnp.clip(x1_squared_norm, a_min=eps * eps)
-    x2_squared_norm = jnp.clip(x2_squared_norm, a_min=eps * eps)
+    x1_sqnorm = jnp.clip(x1_sqnorm, a_min=eps * eps)
+    x2_sqnorm = jnp.clip(x2_sqnorm, a_min=eps * eps)
 
-    x1_norm = jnp.sqrt(x1_squared_norm)
-    x2_norm = jnp.sqrt(x2_squared_norm)
+    x1_rsqnorm = jax.lax.rsqrt(x1_sqnorm)
+    x2_rsqnorm = jax.lax.rsqrt(x2_sqnorm)
 
-    return jnp.sum((x1 / x1_norm) * (x2 / x2_norm), axis=axis)
+    return jnp.sum((x1 * x1_rsqnorm) * (x2 * x2_rsqnorm), axis=axis)
 
 
 @jax.jit

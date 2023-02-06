@@ -10,6 +10,7 @@ import jax.lax as lax
 import jax.numpy as jnp
 
 from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
+from fzjax.higher import pfunc_jit
 
 if typing.TYPE_CHECKING:
     from jaxtyping import Array, Float, Integer
@@ -67,22 +68,22 @@ class BatchNormParams:
         )
 
 
-@partial(jax.jit, static_argnames=("is_training", "compute_stats"))
+@pfunc_jit
 def batch_norm(
     params: BatchNormParams,
     inputs: Float[Array, "*axes"],
-    is_training: bool = False,
-    compute_stats: bool = False,
+    update_stats: Meta[bool] = False,
+    compute_stats: Meta[bool] = False,
 ) -> tuple[Float[Array, "*axes"], BatchNormStates]:
     r_axes = [i for i, v in enumerate(params.shape) if v == 1]
 
     new_state = params.states
-    if compute_stats or is_training:
+    if compute_stats or update_stats:
         mean = jnp.mean(inputs, r_axes, keepdims=True)
         mean_of_squares = jnp.mean(jnp.square(inputs), r_axes, keepdims=True)
         var = mean_of_squares - jnp.square(mean)
 
-        if is_training:
+        if update_stats:
             counter = params.states.counter + 1
             decay_rate = lax.convert_element_type(params.decay_rate, inputs.dtype)
             one = jnp.ones([], inputs.dtype)

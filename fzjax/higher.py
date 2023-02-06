@@ -27,6 +27,13 @@ R = TypeVar("R", ArrayTree, tuple[ArrayTree, ArrayTree])
 Selectors = Collection[str]
 
 
+def rename(newname):
+    def decorator(f):
+        f.__name__ = newname
+        return f
+    return decorator
+
+
 def pfunc_value_and_grad(
     pfunc: Callable[PS, R],
     diff_paths: Collection[str] = (),
@@ -84,14 +91,15 @@ def pfunc_value_and_grad(
     ) -> Union[
         tuple[R, dict[str, ArrayTree]], tuple[tuple[R, dict[str, ArrayTree]]], ArrayTree
     ]:
-        if getattr(_new_vag_func, "internal_func", None) is None:
-            def _helper_func(_sel, _p):
+        if getattr(_new_vag_func, "jax_vag", None) is None:
+            @rename(f"{pfunc.__name__}_vag_wrapper")
+            def _wrapper(_sel, _p):
                 _p = ptree_update(_p, _sel)
                 return pfunc(
                     **{f.name: getattr(_p, f.name) for f in dataclasses.fields(_p)}
                 )
-            _new_vag_func.internal_func = jax.value_and_grad(
-                _helper_func, *jax_args, argnums=0, **jax_kwargs
+            _new_vag_func.jax_vag = jax.value_and_grad(
+                _wrapper, *jax_args, argnums=0, **jax_kwargs
             )
 
         if getattr(_new_vag_func, "datacls", None) is None:
@@ -105,8 +113,8 @@ def pfunc_value_and_grad(
         )
         diff_params = ptree_differentiable(params, diff_paths)
         if return_diff_params:
-            return _new_vag_func.internal_func(diff_params, params), diff_params
-        return _new_vag_func.internal_func(diff_params, params)
+            return _new_vag_func.jax_vag(diff_params, params), diff_params
+        return _new_vag_func.jax_vag(diff_params, params)
 
     return _new_vag_func
 
@@ -127,35 +135,35 @@ def pfunc_jit(
         )
 
     @wraps(pfunc)
-    def _new_jit_func(*args: PS.args, **kwargs: PS.kwargs) -> R:
-        if getattr(_new_jit_func, "internal_func", None) is None:
+    def _jit_pfunc(*args: PS.args, **kwargs: PS.kwargs) -> R:
+        if getattr(_jit_pfunc, "jax_jit", None) is None:
 
-            def _helper_func(_sel, _p):
+            @rename(f"{pfunc.__name__}_jit_wrapper")
+            def _wrapper(_sel, _p):
                 _p = ptree_update(_p, _sel)
 
                 return pfunc(
                     **{f.name: getattr(_p, f.name) for f in dataclasses.fields(_p)}
                 )
 
-            _new_jit_func.internal_func = jax.jit(
-                _helper_func, *jax_args, donate_argnums=0, **jax_kwargs
+            _jit_pfunc.jax_jit = jax.jit(
+                _wrapper, *jax_args, donate_argnums=0, **jax_kwargs
             )
-            _new_jit_func.lower = _new_jit_func.internal_func.lower
+            _jit_pfunc.lower = _jit_pfunc.jax_jit.lower
 
-        if getattr(_new_jit_func, "datacls", None) is None:
-            _new_jit_func.datacls = fzjax_datacls_from_func(pfunc)
+        if getattr(_jit_pfunc, "datacls", None) is None:
+            _jit_pfunc.datacls = fzjax_datacls_from_func(pfunc)
 
-        if getattr(_new_jit_func, "signature", None) is None:
-            _new_jit_func.signature = list(get_func_signature(pfunc).keys())
+        if getattr(_jit_pfunc, "signature", None) is None:
+            _jit_pfunc.signature = list(get_func_signature(pfunc).keys())
 
-        params = _new_jit_func.datacls(
-            **{k: v for k, v in zip(_new_jit_func.signature, args)}, **kwargs
+        params = _jit_pfunc.datacls(
+            **{k: v for k, v in zip(_jit_pfunc.signature, args)}, **kwargs
         )
-
         predicate = NonNullPredicate() and (
             AnnotationPredicate(Donate) or SelectPredicate(donate_paths)
         )
         donate_params = ptree_filter(params, predicate)
-        return _new_jit_func.internal_func(donate_params, params)
+        return _jit_pfunc.jax_jit(donate_params, params)
 
-    return _new_jit_func
+    return _jit_pfunc

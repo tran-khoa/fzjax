@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 import typing
-from functools import partial
 
-import jax
 import jax.lax as lax
 import jax.numpy as jnp
+
+from fzjax.higher import pfunc_jit
+from fzjax.ptree import Meta
 
 if typing.TYPE_CHECKING:
     from jaxtyping import Array, Float
 
 
-@partial(jax.jit, static_argnames="axis")
+@pfunc_jit
 def normalize(
-    inputs: Float[Array, "*axes"], axis: int = -1, eps: float = 1e-5
+    inputs: Float[Array, "*axes"], axis: Meta[int] = -1, eps: float = 1e-5
 ) -> Float[Array, "*axes"]:
     if axis == -1:
         axis = len(inputs.shape) - 1

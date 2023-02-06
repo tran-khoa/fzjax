@@ -13,6 +13,7 @@ from fzjax.ptree import Meta, fzjax_dataclass
 
 from .batch_norm import BatchNormParams, batch_norm
 from .linear import LinearParams, linear
+from ..higher import pfunc_jit
 
 if typing.TYPE_CHECKING:
     from jax.random import PRNGKeyArray
@@ -87,9 +88,11 @@ class MLPParams:
         )
 
 
-@partial(jax.jit, static_argnames="is_training")
+@pfunc_jit
 def mlp(
-    params: MLPParams, inputs: Float[Array, "N InC"], is_training: bool = False,
+    params: MLPParams,
+    inputs: Float[Array, "N InC"],
+    update_bn_stats: Meta[bool] = False,
 ) -> tuple[Float[Array, "N OutC"], Any]:
     x = inputs
     bn_states = []
@@ -98,7 +101,7 @@ def mlp(
     ):
         x = linear(p_linear, x)
         if p_bn is not None:
-            x, bn_state = batch_norm(p_bn, x, is_training)
+            x, bn_state = batch_norm(p_bn, x, update_stats=update_bn_stats)
             bn_states.append(bn_state)
         x = funcs.activation(params.activation, x)
     x = linear(params.linear_params[-1], x)
