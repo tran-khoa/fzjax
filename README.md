@@ -1,12 +1,12 @@
-fzjax - pure parametrized functions on named trees
---------------------------------------------------
-**WORK IN PROGRESS**
+fzjax - pure parametrized functions on trees with paths
+-------------------------------------------------------
+**WORK IN PROGRESS, API likely to change**
 
 This library poses a "pure" alternative to "PyTorch"-like jax libraries/frameworks such as
 flax, dm-haiku and equinox, where "Modules" such as `flax.linen.linear` define
 parameters as object properties, thus introducing side-effects.
 
-Instead, we define such "Modules" (`pfuncs`) as pure functions, expecting pytrees as input.
+Instead, we define such "Modules" (`pfuncs`) as pure functions, expecting pytrees with paths (ptrees) as input.
 As a structured and typed container for `pfunc` parameters, we provide `@fzjax_dataclasses`
 which can be used as a native `dataclasses.dataclass`.[^1]
 
@@ -28,11 +28,12 @@ p = Params()
 ```
 is flattened as 
 ```python
+# ptree_flatten(p)
 {
     "lr": FlattenLeaf(.1, (JDC_META_MARKER,)),
     "weights.0": FlattenLeaf(w1, (JDC_DIFF_MARKER,)),
     "weights.1": FlattenLeaf(w1, (JDC_DIFF_MARKER,)),
-    "states": FlattenLeaf(s1, tuple())
+    "states": FlattenLeaf(s1, ())
 }
 ```
 
@@ -55,9 +56,10 @@ The `NoDiff` annotation marks itself and its children as non-differentiable, ove
 
 ### Higher Functions
 This alternative formulation now allows computing the gradient of a function **w.r.t. parts of a PyTree**).
-For now, we have implemented `pfunc_value_and_grad`, which could be used as follows
+For now, we have implemented `pfunc_value_and_grad` and `pfunc_jit`, which could be used as follows
 ```python
-def bilinear(p: Params, x: jnp.ndarray) -> jnp.ndarray:
+@pfunc_jit
+def bilinear(weights: tuple[jnp.ndarray, jnp.ndarray], x: Donate[jnp.ndarray]) -> jnp.ndarray:
     ...
 
 vg = pfunc_value_and_grad(bilinear, ["weights.0"])
