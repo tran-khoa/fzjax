@@ -1,5 +1,5 @@
-fzjax - pure parametrized functions on trees with paths
--------------------------------------------------------
+# fzjax - pure parametrized functions on trees with paths
+
 **WORK IN PROGRESS, API likely to change**
 
 This library poses a "pure" alternative to "PyTorch"-like jax libraries/frameworks such as
