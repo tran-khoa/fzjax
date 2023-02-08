@@ -22,7 +22,7 @@ For example:
 @fzjax_dataclass
 class Params:
     lr: Meta[int] = .1
-    weights: Differentiable[tuple[jnp.ndarray]] = (w1, w2)
+    weights: Differentiable[tuple[jnp.ndarray, jnp.ndarray]] = (w1, w2)
     states: jnp.ndarray = s1
 p = Params()
 ```
