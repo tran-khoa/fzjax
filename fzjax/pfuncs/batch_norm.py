@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing
+from typing import TypeVar
 from dataclasses import dataclass
 
 import chex
@@ -12,7 +13,6 @@ from fzjax.higher import pfunc_jit
 
 if typing.TYPE_CHECKING:
     from jaxtyping import Array, Integer
-    from typing import TypeVar
 
 
 @fzjax_dataclass
