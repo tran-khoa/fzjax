@@ -60,7 +60,7 @@ T = TypeVar("T", bound=jnp.ndarray)
 
 
 @pfunc_jit
-def batch_norm(
+def layer_norm(
     params: LayerNormParams,
     inputs: T,
 ) -> T:
