@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
-from functools import partial
 
 import chex
-import jax
 import jax.lax as lax
 import jax.numpy as jnp
 
@@ -13,23 +11,24 @@ from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
 from fzjax.higher import pfunc_jit
 
 if typing.TYPE_CHECKING:
-    from jaxtyping import Array, Float, Integer
+    from jaxtyping import Array, Integer
+    from typing import TypeVar
 
 
 @fzjax_dataclass
 class BatchNormStates:
-    mean_average: Float[Array, "*axes"]
-    var_average: Float[Array, "*axes"]
-    mean_hidden: Float[Array, "*axes"]
-    var_hidden: Float[Array, "*axes"]
+    mean_average: jnp.ndarray
+    var_average: jnp.ndarray
+    mean_hidden: jnp.ndarray
+    var_hidden: jnp.ndarray
     counter: Integer[Array, ""]
 
 
 @fzjax_dataclass
 @dataclass(frozen=True)
 class BatchNormParams:
-    scale: Differentiable[Float[Array, "*axes"]]
-    offset: Differentiable[Float[Array, "*axes"]]
+    scale: Differentiable[jnp.ndarray]
+    offset: Differentiable[jnp.ndarray]
 
     states: BatchNormStates
 
@@ -68,13 +67,16 @@ class BatchNormParams:
         )
 
 
+T = TypeVar("T", bound=jnp.ndarray)
+
+
 @pfunc_jit
 def batch_norm(
     params: BatchNormParams,
-    inputs: Float[Array, "*axes"],
+    inputs: T,
     update_stats: Meta[bool] = False,
     compute_stats: Meta[bool] = False,
-) -> tuple[Float[Array, "*axes"], BatchNormStates]:
+) -> tuple[T, BatchNormStates]:
     r_axes = [i for i, v in enumerate(params.shape) if v == 1]
 
     new_state = params.states

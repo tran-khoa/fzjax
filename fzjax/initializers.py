@@ -129,7 +129,6 @@ class KaimingUniformInitializer(Initializer):
     ) -> jnp.ndarray:
         fan_in, fan_out = compute_fans(pseudo_shape or shape, fan_in_axes=self.in_axes)
         fan = fan_in if self.mode == "fan_in" else fan_out
-
         gain = calculate_gain(self.nonlinearity, self.a)
         std = gain / math.sqrt(fan)
         bound = math.sqrt(3.0) * std
