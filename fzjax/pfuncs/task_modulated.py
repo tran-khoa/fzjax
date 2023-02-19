@@ -12,6 +12,7 @@ from .conv import Conv2dParams, conv2d
 if typing.TYPE_CHECKING:
     from jax.random import PRNGKeyArray
     from jaxtyping import Array, Float
+
     from fzjax.initializers import Initializer
 
 

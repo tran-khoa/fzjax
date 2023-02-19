@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import TypeVar
 
@@ -25,6 +26,7 @@ class LayerNormParams:
         eps:
             A small float added to variance to avoid dividing by zero.
     """
+
     scale: Differentiable[jnp.ndarray]
     offset: Differentiable[jnp.ndarray]
 

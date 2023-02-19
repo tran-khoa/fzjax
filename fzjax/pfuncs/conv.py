@@ -13,6 +13,7 @@ from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
 if typing.TYPE_CHECKING:
     from jax.random import PRNGKeyArray
     from jaxtyping import Array, Float
+
     from fzjax.initializers import Initializer
 
 

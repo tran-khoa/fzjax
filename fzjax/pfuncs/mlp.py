@@ -3,29 +3,40 @@ from __future__ import annotations
 import itertools
 import typing
 from dataclasses import dataclass
-from functools import partial
-from typing import Any, Sequence
+from enum import Enum, auto
+from typing import Any, Sequence, Union
 
 import jax.random
 
 import fzjax.funcs as funcs
 from fzjax.ptree import Meta, fzjax_dataclass
 
-from .batch_norm import BatchNormParams, batch_norm
-from .linear import LinearParams, linear
 from ..higher import pfunc_jit
+from .batch_norm import BatchNormParams, batch_norm
+from .layer_norm import LayerNormParams, layer_norm
+from .linear import LinearParams, linear
 
 if typing.TYPE_CHECKING:
     from jax.random import PRNGKeyArray
     from jaxtyping import Array, Float
+
     from fzjax.initializers import Initializer
+
+
+NormParams = Union[None, BatchNormParams, LayerNormParams]
+
+
+class NormType(Enum):
+    NONE = auto()
+    BATCH_NORM = auto()
+    LAYER_NORM = auto()
 
 
 @fzjax_dataclass
 @dataclass(frozen=True)
 class MLPParams:
     linear_params: tuple[LinearParams, ...]
-    bn_params: tuple[BatchNormParams, ...]
+    norm_params: tuple[BatchNormParams, ...]
 
     activation: Meta[str]
 
@@ -35,24 +46,23 @@ class MLPParams:
         in_features: int,
         out_features: Sequence[int],
         use_bias: bool = True,
-        use_bn: bool = True,
-        bn_kwargs: dict[str, Any] | None = None,
+        norm_type: NormType = NormType.BATCH_NORM,
+        norm_kwargs: dict[str, Any] | None = None,
         *,
         initializer: Initializer,
         activation: str = "relu",
         rng: PRNGKeyArray,
     ) -> MLPParams:
-
         if not funcs.is_valid_activation(activation):
             raise ValueError(f"Activation '{activation}' is not registered.")
         if not out_features:
             raise ValueError("out_features must have at least one element.")
 
-        if bn_kwargs is None:
-            bn_kwargs = {}
+        if norm_kwargs is None:
+            norm_kwargs = {}
 
         dim_in = in_features
-        bn_params = []
+        norm_params = []
         linear_params = []
 
         for dim in out_features[:-1]:
@@ -66,8 +76,14 @@ class MLPParams:
                     rng=lin_rng,
                 )
             )
-            if use_bn:
-                bn_params.append(BatchNormParams.create(shape=(1, dim), **bn_kwargs))
+            if norm_type == NormType.BATCH_NORM:
+                norm_params.append(
+                    BatchNormParams.create(shape=(1, dim), **norm_kwargs)
+                )
+            elif norm_type == NormType.LAYER_NORM:
+                norm_params.append(
+                    LayerNormParams.create(norm_shape=(-1, dim), **norm_kwargs)
+                )
             dim_in = dim
 
         rng, lin_rng = jax.random.split(rng)
@@ -83,7 +99,7 @@ class MLPParams:
 
         return MLPParams(
             linear_params=tuple(linear_params),
-            bn_params=tuple(bn_params),
+            norm_params=tuple(norm_params),
             activation=activation,
         )
 
@@ -96,13 +112,15 @@ def mlp(
 ) -> tuple[Float[Array, "N OutC"], Any]:
     x = inputs
     bn_states = []
-    for p_linear, p_bn in itertools.zip_longest(
-        params.linear_params[:-1], params.bn_params
+    for p_linear, p_norm in itertools.zip_longest(
+        params.linear_params[:-1], params.norm_params
     ):
         x = linear(p_linear, x)
-        if p_bn is not None:
-            x, bn_state = batch_norm(p_bn, x, update_stats=update_bn_stats)
+        if isinstance(p_norm, BatchNormParams):
+            x, bn_state = batch_norm(p_norm, x, update_stats=update_bn_stats)
             bn_states.append(bn_state)
+        elif isinstance(p_norm, LayerNormParams):
+            x = layer_norm(p_norm, x)
         x = funcs.activation(params.activation, x)
     x = linear(params.linear_params[-1], x)
     return x, bn_states

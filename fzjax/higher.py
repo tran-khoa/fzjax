@@ -31,6 +31,7 @@ def rename(newname):
     def decorator(f):
         f.__name__ = newname
         return f
+
     return decorator
 
 
@@ -92,12 +93,14 @@ def pfunc_value_and_grad(
         tuple[R, dict[str, ArrayTree]], tuple[tuple[R, dict[str, ArrayTree]]], ArrayTree
     ]:
         if getattr(_new_vag_func, "jax_vag", None) is None:
+
             @rename(f"{pfunc.__name__}_vag_wrapper")
             def _wrapper(_sel, _p):
                 _p = ptree_update(_p, _sel)
                 return pfunc(
                     **{f.name: getattr(_p, f.name) for f in dataclasses.fields(_p)}
                 )
+
             _new_vag_func.jax_vag = jax.value_and_grad(
                 _wrapper, *jax_args, argnums=0, **jax_kwargs
             )

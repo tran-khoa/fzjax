@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import TypeVar, Protocol, Callable
-import jax.nn
+from typing import Callable, Protocol, TypeVar
 
+import jax.nn
 
 T = TypeVar("T")
 

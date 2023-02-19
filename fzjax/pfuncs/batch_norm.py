@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import typing
-from typing import TypeVar
 from dataclasses import dataclass
+from typing import TypeVar
 
 import chex
 import jax.lax as lax
 import jax.numpy as jnp
 
-from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
 from fzjax.higher import pfunc_jit
+from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
 
 if typing.TYPE_CHECKING:
     from jaxtyping import Array, Integer

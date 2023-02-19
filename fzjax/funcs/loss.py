@@ -6,9 +6,9 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from .misc import normalize
 from ..higher import pfunc_jit
 from ..ptree import Meta
+from .misc import normalize
 
 if typing.TYPE_CHECKING:
     from jaxtyping import Array, Float, Integer
@@ -32,7 +32,6 @@ def cosine_similarity(
     axis: Meta[int] = 1,
     eps: float = 1e-8,
 ) -> Float[Array, "*"]:
-
     x1_sqnorm = jnp.sum(jnp.square(x1), axis=axis, keepdims=True)
     x2_sqnorm = jnp.sum(jnp.square(x2), axis=axis, keepdims=True)
 
