@@ -27,6 +27,7 @@ class AnnotatedLeaf(Generic[_T]):
 
 
 def ptree_flatten(obj: Any, with_annotations: bool = True) -> dict[str, AnnotatedLeaf]:
+    # TODO: optimize, benchmark
     flattened = tree.flatten_with_path(obj)
     flattened = {".".join(map(str, path)): val for path, val in flattened}
 
@@ -69,8 +70,12 @@ def ptree_unflatten(
         dict[str, Union[AnnotatedLeaf, Any]], list[Union[AnnotatedLeaf, Any]]
     ],
 ) -> Any:
+    """
+    THIS OPERATION SHOULD BE AVOIDED!
+    Unflatten ignores all path informations and depends solely on the input order.
+    """
     if isinstance(flattened, list):
-        return [v.val if isinstance(v, AnnotatedLeaf) else v for v in flattened]
+        flattened = [v.val if isinstance(v, AnnotatedLeaf) else v for v in flattened]
     else:
         assert isinstance(flattened, dict)
         flattened = [
@@ -83,6 +88,7 @@ def ptree_unflatten(
 def ptree_update(obj: T, changes: dict[str, Any]) -> T:
     remaining = set(changes.keys())
 
+    # TODO: consider using MAP_TO_NONE as well for deleting nodes
     changes = {k: v if v is not None else tree.MAP_TO_NONE for k, v in changes.items()}
 
     def update(path: tuple, _obj: Any):

@@ -3,13 +3,13 @@ from __future__ import annotations
 import itertools
 import typing
 from dataclasses import dataclass
-from enum import Enum, auto
-from typing import Any, Sequence, Union
+from typing import Any, Sequence
 
 import jax.random
 
 import fzjax.funcs as funcs
 from fzjax.ptree import Meta, fzjax_dataclass
+from . import NormParams, NormType
 
 from ..higher import pfunc_jit
 from .batch_norm import BatchNormParams, batch_norm
@@ -23,20 +23,11 @@ if typing.TYPE_CHECKING:
     from fzjax.initializers import Initializer
 
 
-NormParams = Union[None, BatchNormParams, LayerNormParams]
-
-
-class NormType(Enum):
-    NONE = auto()
-    BATCH_NORM = auto()
-    LAYER_NORM = auto()
-
-
 @fzjax_dataclass
 @dataclass(frozen=True)
 class MLPParams:
     linear_params: tuple[LinearParams, ...]
-    norm_params: tuple[BatchNormParams, ...]
+    norm_params: tuple[NormParams, ...]
 
     activation: Meta[str]
 

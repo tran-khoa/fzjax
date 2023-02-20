@@ -15,6 +15,54 @@ if typing.TYPE_CHECKING:
     from jaxtyping import Array, Integer
 
 
+T = TypeVar("T", bound=jnp.ndarray)
+
+
+@pfunc_jit
+def batch_norm(
+    params: BatchNormParams,
+    inputs: T,
+    update_stats: Meta[bool] = False,
+    compute_stats: Meta[bool] = False,
+) -> tuple[T, BatchNormStates]:
+    r_axes = [i for i, v in enumerate(params.shape) if v == 1]
+
+    new_state = params.states
+    if compute_stats or update_stats:
+        mean = jnp.mean(inputs, r_axes, keepdims=True)
+        mean_of_squares = jnp.mean(jnp.square(inputs), r_axes, keepdims=True)
+        var = mean_of_squares - jnp.square(mean)
+
+        if update_stats:
+            counter = params.states.counter + 1
+            decay_rate = lax.convert_element_type(params.decay_rate, inputs.dtype)
+            one = jnp.ones([], inputs.dtype)
+
+            mean_hidden = params.states.mean_hidden * decay_rate + mean * (
+                1 - decay_rate
+            )
+            var_hidden = params.states.var_hidden * decay_rate + var * (1 - decay_rate)
+
+            mean_average = mean_hidden / (one - jnp.power(decay_rate, counter))
+            var_average = var_hidden / (one - jnp.power(decay_rate, counter))
+
+            new_state = BatchNormStates(
+                mean_average=mean_average,
+                var_average=var_average,
+                mean_hidden=mean_hidden,
+                var_hidden=var_hidden,
+                counter=counter,
+            )
+    else:
+        mean = params.states.mean_average.astype(inputs.dtype)
+        var = params.states.var_average.astype(inputs.dtype)
+
+    eps = lax.convert_element_type(params.eps, inputs.dtype)
+    inv = params.scale * lax.rsqrt(var + eps)
+
+    return (inputs - mean) * inv + params.offset, new_state
+
+
 @fzjax_dataclass
 class BatchNormStates:
     mean_average: jnp.ndarray
@@ -66,50 +114,3 @@ class BatchNormParams:
             eps=eps,
         )
 
-
-T = TypeVar("T", bound=jnp.ndarray)
-
-
-@pfunc_jit
-def batch_norm(
-    params: BatchNormParams,
-    inputs: T,
-    update_stats: Meta[bool] = False,
-    compute_stats: Meta[bool] = False,
-) -> tuple[T, BatchNormStates]:
-    r_axes = [i for i, v in enumerate(params.shape) if v == 1]
-
-    new_state = params.states
-    if compute_stats or update_stats:
-        mean = jnp.mean(inputs, r_axes, keepdims=True)
-        mean_of_squares = jnp.mean(jnp.square(inputs), r_axes, keepdims=True)
-        var = mean_of_squares - jnp.square(mean)
-
-        if update_stats:
-            counter = params.states.counter + 1
-            decay_rate = lax.convert_element_type(params.decay_rate, inputs.dtype)
-            one = jnp.ones([], inputs.dtype)
-
-            mean_hidden = params.states.mean_hidden * decay_rate + mean * (
-                1 - decay_rate
-            )
-            var_hidden = params.states.var_hidden * decay_rate + var * (1 - decay_rate)
-
-            mean_average = mean_hidden / (one - jnp.power(decay_rate, counter))
-            var_average = var_hidden / (one - jnp.power(decay_rate, counter))
-
-            new_state = BatchNormStates(
-                mean_average=mean_average,
-                var_average=var_average,
-                mean_hidden=mean_hidden,
-                var_hidden=var_hidden,
-                counter=counter,
-            )
-    else:
-        mean = params.states.mean_average.astype(inputs.dtype)
-        var = params.states.var_average.astype(inputs.dtype)
-
-    eps = lax.convert_element_type(params.eps, inputs.dtype)
-    inv = params.scale * lax.rsqrt(var + eps)
-
-    return (inputs - mean) * inv + params.offset, new_state
