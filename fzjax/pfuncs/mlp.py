@@ -3,13 +3,13 @@ from __future__ import annotations
 import itertools
 import typing
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 
 import jax.random
 
 import fzjax.funcs as funcs
 from fzjax.ptree import Meta, fzjax_dataclass
-from . import NormParams, NormType
+from . import NormType
 
 from ..higher import pfunc_jit
 from .batch_norm import BatchNormParams, batch_norm
@@ -21,6 +21,8 @@ if typing.TYPE_CHECKING:
     from jaxtyping import Array, Float
 
     from fzjax.initializers import Initializer
+
+NormParams = Union[None, BatchNormParams, LayerNormParams]
 
 
 @fzjax_dataclass

@@ -24,6 +24,7 @@ from .utils import (
     ptree_select,
     ptree_unflatten,
     ptree_update,
+    register_user_dict,
 )
 
 __all__ = [
@@ -46,6 +47,7 @@ __all__ = [
     "ptree_select",
     "ptree_by_annotation",
     "ptree_differentiable",
+    "register_user_dict",
     "Predicate",
     "SelectPredicate",
     "AnnotationPredicate",

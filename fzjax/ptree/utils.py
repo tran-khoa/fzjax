@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import dataclasses
 from abc import ABC, abstractmethod
-from collections import defaultdict
+from collections import UserDict, defaultdict
 from dataclasses import dataclass
 from typing import Annotated, Any, Collection, Generic, TypeVar, Union
 
 import tree
+from jax._src.tree_util import register_pytree_node
 
 from .annotations import JDC_DIFF_MARKER, JDC_NODIFF_MARKER, post_process_annotations
 from .internal_helpers import get_type_hints_partial
@@ -14,6 +15,14 @@ from .internal_helpers import get_type_hints_partial
 FallbackT = TypeVar("FallbackT", list, tuple, dict)
 T = TypeVar("T")
 _T = TypeVar("_T")
+_T_UserDict = TypeVar("_T_UserDict", bound=UserDict)
+
+
+def register_user_dict(cls: type[_T_UserDict]) -> type[_T_UserDict]:
+    register_pytree_node(cls,
+                         lambda _obj: (tuple(_obj.values()), tuple(_obj.keys())),
+                         lambda _keys, _vals: cls({k: v for k, v in zip(_keys, _vals)}))
+    return cls
 
 
 @dataclass(frozen=False, init=False)
