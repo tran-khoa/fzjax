@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import typing
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, Union
 
 import chex
 import jax
@@ -135,3 +135,13 @@ class KaimingUniformInitializer(Initializer):
         return jax.random.uniform(
             rng, shape, minval=-bound, maxval=bound, dtype=self.dtype
         )
+
+
+@dataclass
+class ConstantInitializer(Initializer):
+    constant: Union[float, int]
+
+    def __call__(self, shape: tuple[int, ...], rng: PRNGKeyArray, *,
+                 pseudo_shape: tuple[int, ...] | None = None) -> jnp.ndarray:
+        return jnp.full(shape, fill_value=self.constant)
+

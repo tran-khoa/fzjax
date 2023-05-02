@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from functools import partial
+from typing import Union, Sequence
 
 import jax
 import jax.numpy as jnp
@@ -29,7 +29,7 @@ def mse_loss(preds: Float[Array, "N"], labels: Integer[Array, "N"]):
 def cosine_similarity(
     x1: Float[Array, "*"],
     x2: Float[Array, "*"],
-    axis: Meta[int] = 1,
+    axis: Meta[Union[None, int, Sequence[int]]] = 1,
     eps: float = 1e-8,
 ) -> Float[Array, "*"]:
     x1_sqnorm = jnp.sum(jnp.square(x1), axis=axis, keepdims=True)

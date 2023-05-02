@@ -9,6 +9,7 @@ import jax.lax as lax
 import jax.numpy as jnp
 
 from fzjax.higher import pfunc_jit
+from fzjax.pfuncs import Norm
 from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
 
 if typing.TYPE_CHECKING:
@@ -20,12 +21,12 @@ T = TypeVar("T", bound=jnp.ndarray)
 
 @pfunc_jit
 def batch_norm(
-    params: BatchNormParams,
+    params: BatchNorm,
     inputs: T,
     update_stats: Meta[bool] = False,
     compute_stats: Meta[bool] = False,
 ) -> tuple[T, BatchNormStates]:
-    r_axes = [i for i, v in enumerate(params.shape) if v == 1]
+    r_axes = [i for i, v in enumerate(params.shape) if v == -1]
 
     new_state = params.states
     if compute_stats or update_stats:
@@ -74,7 +75,7 @@ class BatchNormStates:
 
 @fzjax_dataclass
 @dataclass(frozen=True)
-class BatchNormParams:
+class BatchNorm(Norm):
     scale: Differentiable[jnp.ndarray]
     offset: Differentiable[jnp.ndarray]
 
@@ -91,7 +92,7 @@ class BatchNormParams:
         dtype: chex.ArrayDType = jnp.float32,
         decay_rate: float = 0.999,
         eps: float = 1e-5,
-    ) -> BatchNormParams:
+    ) -> BatchNorm:
         """
         Args:
             shape: Shape of batch norm. Set to -1 for each axis that should be averaged over, else set to dimension.
@@ -99,14 +100,16 @@ class BatchNormParams:
             decay_rate: Decay rate of the EMA of the means and variances.
             eps: A small float added to variance to avoid dividing by zero.
         """
-        return BatchNormParams(
-            scale=jnp.ones(shape, dtype),
-            offset=jnp.zeros(shape, dtype),
+        param_shape = [1 if a <= 0 else a for a in shape]
+
+        return BatchNorm(
+            scale=jnp.ones(param_shape, dtype),
+            offset=jnp.zeros(param_shape, dtype),
             states=BatchNormStates(
-                mean_average=jnp.zeros(shape, dtype),
-                mean_hidden=jnp.zeros(shape, dtype),
-                var_average=jnp.zeros(shape, dtype),
-                var_hidden=jnp.zeros(shape, dtype),
+                mean_average=jnp.zeros(param_shape, dtype),
+                mean_hidden=jnp.zeros(param_shape, dtype),
+                var_average=jnp.zeros(param_shape, dtype),
+                var_hidden=jnp.zeros(param_shape, dtype),
                 counter=jnp.zeros((1,), dtype=jnp.int32),
             ),
             shape=shape,
@@ -114,3 +117,10 @@ class BatchNormParams:
             eps=eps,
         )
 
+    def __call__(
+            self,
+            inputs: T,
+            update_stats: Meta[bool] = False,
+            compute_stats: Meta[bool] = False,
+    ) -> tuple[T, BatchNormStates]:
+        return batch_norm(self, inputs, update_stats, compute_stats)

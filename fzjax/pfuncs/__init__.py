@@ -1,19 +1,13 @@
 from __future__ import annotations
 
-from enum import Enum, auto
 
+from .norms.common import Norm
+from .norms.batch_norm import BatchNorm, BatchNormStates, batch_norm
+from .norms.layer_norm import LayerNorm, layer_norm
 
-class NormType(Enum):
-    NONE = auto()
-    BATCH_NORM = auto()
-    LAYER_NORM = auto()
-
-
-from .batch_norm import BatchNormParams, BatchNormStates, batch_norm
-from .conv import Conv2dParams, conv2d
-from .layer_norm import LayerNormParams, layer_norm
-from .linear import LinearParams, linear
-from .mlp import MLPParams, mlp
-from .task_modulated import TMConv2dParams, tm_conv2d
+from .conv import Conv2d, conv2d
+from .linear import Linear, linear
+from .mlp import MLP, mlp
+from .task_modulated import TMConv2D, tm_conv2d
 
 

@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 
 @fzjax_dataclass
 @dataclass(frozen=True)
-class LinearParams:
+class Linear:
     weights: Differentiable[Float[Array, "OutC InC"]]
     biases: Differentiable[Optional[Float[Array, "OutC"]]]
 
@@ -29,23 +29,30 @@ class LinearParams:
         use_bias: bool = True,
         *,
         initializer: Initializer,
+        bias_initializer: Optional[Initializer] = None,
         rng: PRNGKeyArray,
-    ) -> LinearParams:
+    ) -> Linear:
         wkey, bkey = jax.random.split(rng)
 
-        return LinearParams(
+        if bias_initializer is None:
+            bias_initializer = initializer
+
+        return Linear(
             weights=initializer((in_features, out_features), wkey),
-            biases=initializer(
+            biases=bias_initializer(
                 (out_features,), bkey, pseudo_shape=(out_features, in_features)
             )
             if use_bias
             else None,
         )
 
+    def __call__(self, x: Float[Array, "... InC"]) -> Float[Array, "... OutC"]:
+        return linear(self, x)
+
 
 @jax.jit
 def linear(
-    params: LinearParams, x: Float[Array, "... InC"]
+    params: Linear, x: Float[Array, "... InC"]
 ) -> Float[Array, "... OutC"]:
     x = x @ params.weights
     if params.biases is not None:

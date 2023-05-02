@@ -3,18 +3,16 @@ from __future__ import annotations
 import itertools
 import typing
 from dataclasses import dataclass
-from typing import Any, Sequence, Union
+from typing import Any, Sequence, Optional
 
 import jax.random
 
 import fzjax.funcs as funcs
 from fzjax.ptree import Meta, fzjax_dataclass
-from . import NormType
 
 from ..higher import pfunc_jit
-from .batch_norm import BatchNormParams, batch_norm
-from .layer_norm import LayerNormParams, layer_norm
-from .linear import LinearParams, linear
+from .norms.common import Norm
+from .linear import Linear
 
 if typing.TYPE_CHECKING:
     from jax.random import PRNGKeyArray
@@ -22,14 +20,12 @@ if typing.TYPE_CHECKING:
 
     from fzjax.initializers import Initializer
 
-NormParams = Union[None, BatchNormParams, LayerNormParams]
-
 
 @fzjax_dataclass
 @dataclass(frozen=True)
-class MLPParams:
-    linear_params: tuple[LinearParams, ...]
-    norm_params: tuple[NormParams, ...]
+class MLP:
+    linears: tuple[Linear, ...]
+    norms: tuple[Norm, ...]
 
     activation: Meta[str]
 
@@ -39,13 +35,14 @@ class MLPParams:
         in_features: int,
         out_features: Sequence[int],
         use_bias: bool = True,
-        norm_type: NormType = NormType.BATCH_NORM,
+
+        norm_type: Optional[type[Norm]] = None,
         norm_kwargs: dict[str, Any] | None = None,
         *,
         initializer: Initializer,
         activation: str = "relu",
         rng: PRNGKeyArray,
-    ) -> MLPParams:
+    ) -> MLP:
         if not funcs.is_valid_activation(activation):
             raise ValueError(f"Activation '{activation}' is not registered.")
         if not out_features:
@@ -61,7 +58,7 @@ class MLPParams:
         for dim in out_features[:-1]:
             rng, lin_rng = jax.random.split(rng)
             linear_params.append(
-                LinearParams.create(
+                Linear.create(
                     in_features=dim_in,
                     out_features=dim,
                     use_bias=use_bias,
@@ -69,19 +66,16 @@ class MLPParams:
                     rng=lin_rng,
                 )
             )
-            if norm_type == NormType.BATCH_NORM:
+            if norm_type is not None:
                 norm_params.append(
-                    BatchNormParams.create(shape=(1, dim), **norm_kwargs)
+                    norm_type.create(shape=(-1, dim), **norm_kwargs)
                 )
-            elif norm_type == NormType.LAYER_NORM:
-                norm_params.append(
-                    LayerNormParams.create(norm_shape=(-1, dim), **norm_kwargs)
-                )
+
             dim_in = dim
 
         rng, lin_rng = jax.random.split(rng)
         linear_params.append(
-            LinearParams.create(
+            Linear.create(
                 in_features=dim_in,
                 out_features=out_features[-1],
                 use_bias=use_bias,
@@ -90,30 +84,33 @@ class MLPParams:
             )
         )
 
-        return MLPParams(
-            linear_params=tuple(linear_params),
-            norm_params=tuple(norm_params),
+        return MLP(
+            linears=tuple(linear_params),
+            norms=tuple(norm_params),
             activation=activation,
         )
+
+    def __call__(self,
+                 inputs: Float[Array, "N InC"],
+                 norm_kwargs: dict[str, Any]) -> tuple[Float[Array, "N OutC"], list[Any]]:
+        return mlp(self, inputs, norm_kwargs)
 
 
 @pfunc_jit
 def mlp(
-    params: MLPParams,
+    params: MLP,
     inputs: Float[Array, "N InC"],
-    update_bn_stats: Meta[bool] = False,
-) -> tuple[Float[Array, "N OutC"], Any]:
+    norm_kwargs: dict[str, Any],
+) -> tuple[Float[Array, "N OutC"], list[Any]]:
     x = inputs
-    bn_states = []
+    norm_states = []
     for p_linear, p_norm in itertools.zip_longest(
-        params.linear_params[:-1], params.norm_params
+            params.linears[:-1], params.norms
     ):
-        x = linear(p_linear, x)
-        if isinstance(p_norm, BatchNormParams):
-            x, bn_state = batch_norm(p_norm, x, update_stats=update_bn_stats)
-            bn_states.append(bn_state)
-        elif isinstance(p_norm, LayerNormParams):
-            x = layer_norm(p_norm, x)
+        x = p_linear(x)
+        x, norm_state = p_norm(x, **norm_kwargs)
         x = funcs.activation(params.activation, x)
-    x = linear(params.linear_params[-1], x)
-    return x, bn_states
+        norm_states.append(norm_state)
+
+    x = params.linears[-1](x)
+    return x, norm_states

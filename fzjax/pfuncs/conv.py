@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, ClassVar
 
 import jax.lax as lax
 import jax.numpy as jnp
 import jax.random
 
+from fzjax.higher import pfunc_jit
 from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
 
 if typing.TYPE_CHECKING:
@@ -17,15 +18,34 @@ if typing.TYPE_CHECKING:
     from fzjax.initializers import Initializer
 
 
+@pfunc_jit
+def conv2d(
+    params: Conv2d, x: Float[Array, "N InC InH InW"]
+) -> Float[Array, "N OutC OutH OutW"]:
+    x = lax.conv_general_dilated(
+        lhs=x,
+        rhs=params.filters,
+        padding="SAME",
+        window_strides=(params.stride, params.stride),
+        dimension_numbers=("NCHW", "OIHW", "NCHW"),
+    )
+    if params.biases is not None:
+        x += jnp.reshape(params.biases, (1, -1, 1, 1))
+
+    return x
+
+
 @fzjax_dataclass
 @dataclass(frozen=True)
-class Conv2dParams:
+class Conv2d:
     filters: Differentiable[Float[Array, "OutC InC K K"]]
     biases: Differentiable[Optional[Float[Array, "Out"]]]
 
     stride: Meta[int]
     groups: Meta[int]
     padding: Meta[str]
+
+    func: ClassVar = conv2d
 
     @classmethod
     def create(
@@ -67,19 +87,6 @@ class Conv2dParams:
     def out_filters(self):
         return self.filters.shape[0]
 
+    def __call__(self, x: Float[Array, "N InC InH InW"]) -> Float[Array, "N OutC OutH OutW"]:
+        return conv2d(self, x)
 
-@jax.jit
-def conv2d(
-    params: Conv2dParams, x: Float[Array, "N InC InH InW"]
-) -> Float[Array, "N OutC OutH OutW"]:
-    x = lax.conv_general_dilated(
-        lhs=x,
-        rhs=params.filters,
-        padding="SAME",
-        window_strides=(params.stride, params.stride),
-        dimension_numbers=("NCHW", "OIHW", "NCHW"),
-    )
-    if params.biases is not None:
-        x += jnp.reshape(params.biases, (1, -1, 1, 1))
-
-    return x

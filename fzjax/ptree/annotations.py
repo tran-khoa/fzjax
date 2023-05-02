@@ -22,6 +22,7 @@ JDC_NODIFF_MARKER = "__fzjax_pytree_nondifferentiable_field__"
 JDC_DONATE_MARKER = "__fzjax_pytree_donate_field__"
 
 # Stolen from here: https://github.com/google/jax/issues/10476
+# and here: https://github.com/brentyi/jax_dataclasses/blob/main/jax_dataclasses/_dataclasses.py
 
 ###############
 # Annotations #
@@ -47,6 +48,22 @@ ANNOTATIONS = {
     "NoDiff": NoDiff,
     "Donate": Donate,
 }
+
+ANNOTATION_STRING = {
+    "Meta": JDC_META_MARKER,
+    "Static": JDC_META_MARKER,
+    "Diff": JDC_DIFF_MARKER,
+    "Differentiable": JDC_DIFF_MARKER,
+    "NoDiff": JDC_NODIFF_MARKER,
+    "Donate": JDC_NODIFF_MARKER,
+}
+
+
+def register_annotation(name: str,
+                        annote_type: type[Annotated],
+                        marker: str):
+    ANNOTATIONS[name] = annote_type
+    ANNOTATION_STRING[name] = marker
 
 
 def post_process_annotations(annotations: tuple[str, ...]) -> tuple[str, ...]:

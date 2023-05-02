@@ -7,7 +7,7 @@ import jax
 
 from fzjax.ptree import fzjax_dataclass
 
-from .conv import Conv2dParams, conv2d
+from .conv import Conv2d, conv2d
 
 if typing.TYPE_CHECKING:
     from jax.random import PRNGKeyArray
@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
 
 @fzjax_dataclass
 @dataclass(frozen=True)
-class TMConv2dParams(Conv2dParams):
+class TMConv2D(Conv2d):
     @classmethod
     def create(
         cls,
@@ -31,9 +31,9 @@ class TMConv2dParams(Conv2dParams):
         initializer: Initializer,
         rng: PRNGKeyArray,
         **kwargs,
-    ) -> TMConv2dParams:
+    ) -> TMConv2D:
         assert not kwargs
-        return Conv2dParams.create(
+        return Conv2d.create(
             in_filters=in_filters,
             out_filters=out_filters,
             kernel_size=kernel_size,
@@ -48,7 +48,7 @@ class TMConv2dParams(Conv2dParams):
 
 @jax.jit
 def tm_conv2d(
-    params: TMConv2dParams,
+    params: TMConv2D,
     x: Float[Array, "N InC H W"],
     shifts: Float[Array, "N OutC H W"] | None,
     gains: Float[Array, "N OutC H W"] | None,
