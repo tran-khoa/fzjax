@@ -80,6 +80,10 @@ class Conv2d:
         )
 
     @property
+    def kernel_size(self):
+        return self.filters.shape[2]
+
+    @property
     def in_filters(self):
         return self.filters.shape[1]
 

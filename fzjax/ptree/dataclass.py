@@ -25,7 +25,7 @@ T = TypeVar("T")
 def fzjax_dataclass(cls: type[T]) -> type[T]:
     """
     This function is a modification of jax_dataclasses "_register_pytree_dataclass".
-    This version can transforms classes to dataclasses only if necessary.
+    This version transforms classes to dataclasses only if necessary.
 
     Since this dataclass uses chex's mappable_dataclass, the inialializer only accepts
     keyword arguments (kw_only=True).
