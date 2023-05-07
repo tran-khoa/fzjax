@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from typing import Annotated, Any, Collection, Generic, TypeVar, Union
 
 import tree
-from jax._src.tree_util import register_pytree_node
+from jax.tree_util import register_pytree_node
 
-from .annotations import JDC_DIFF_MARKER, JDC_NODIFF_MARKER, post_process_annotations
+from .annotations import DIFF, NODIFF, post_process_annotations
 from .internal_helpers import get_type_hints_partial
 
 FallbackT = TypeVar("FallbackT", list, tuple, dict)
@@ -175,9 +175,9 @@ class AnnotationPredicate(Predicate):
 class DifferentiablePredicate(Predicate):
     def __call__(self, path: str, leaf: AnnotatedLeaf) -> bool:
         return (
-            JDC_DIFF_MARKER in leaf.meta
-            and JDC_NODIFF_MARKER not in leaf.meta
-            and (leaf.val is not None)
+                DIFF in leaf.meta
+                and NODIFF not in leaf.meta
+                and (leaf.val is not None)
         )
 
 

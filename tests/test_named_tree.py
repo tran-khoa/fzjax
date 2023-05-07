@@ -6,8 +6,8 @@ from typing import Optional
 import pytest
 
 from fzjax.ptree import (
-    JDC_DIFF_MARKER,
-    JDC_META_MARKER,
+    DIFF,
+    STATIC,
     AnnotatedLeaf,
     Differentiable,
     Meta,
@@ -42,17 +42,17 @@ def test_flatten_unflatten(dummies):
     flattened = ptree_flatten(dummies[2])
 
     ref_flattened = {
-        "meta": AnnotatedLeaf(val=1, annotations=(JDC_META_MARKER,)),
+        "meta": AnnotatedLeaf(val=1, annotations=(STATIC,)),
         "state": AnnotatedLeaf(val=0.2, annotations=()),
-        "param.1": AnnotatedLeaf(val=0.2, annotations=(JDC_DIFF_MARKER,)),
-        "param.0": AnnotatedLeaf(val=0.1, annotations=(JDC_DIFF_MARKER,)),
-        "nested.meta": AnnotatedLeaf(val=1, annotations=(JDC_META_MARKER,)),
+        "param.1": AnnotatedLeaf(val=0.2, annotations=(DIFF,)),
+        "param.0": AnnotatedLeaf(val=0.1, annotations=(DIFF,)),
+        "nested.meta": AnnotatedLeaf(val=1, annotations=(STATIC,)),
         "nested.state": AnnotatedLeaf(val=0.2, annotations=()),
-        "nested.param.0": AnnotatedLeaf(val=0.1, annotations=(JDC_DIFF_MARKER,)),
-        "nested.nested.meta": AnnotatedLeaf(val=1, annotations=(JDC_META_MARKER,)),
+        "nested.param.0": AnnotatedLeaf(val=0.1, annotations=(DIFF,)),
+        "nested.nested.meta": AnnotatedLeaf(val=1, annotations=(STATIC,)),
         "nested.nested.state": AnnotatedLeaf(val=0.2, annotations=()),
-        "nested.nested.param.1": AnnotatedLeaf(val=0.4, annotations=(JDC_DIFF_MARKER,)),
-        "nested.nested.param.0": AnnotatedLeaf(val=0.1, annotations=(JDC_DIFF_MARKER,)),
+        "nested.nested.param.1": AnnotatedLeaf(val=0.4, annotations=(DIFF,)),
+        "nested.nested.param.0": AnnotatedLeaf(val=0.1, annotations=(DIFF,)),
         "nested.nested.nested": AnnotatedLeaf(val=None, annotations=()),
     }
     assert flattened == ref_flattened

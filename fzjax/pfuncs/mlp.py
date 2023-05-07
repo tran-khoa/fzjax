@@ -114,3 +114,5 @@ def mlp(
 
     x = params.linears[-1](x)
     return x, norm_states
+
+

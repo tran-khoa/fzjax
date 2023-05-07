@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 
 from ..higher import pfunc_jit
-from ..ptree import Meta
+from ..ptree import Static
 from .misc import normalize
 
 if typing.TYPE_CHECKING:
@@ -29,9 +29,23 @@ def mse_loss(preds: Float[Array, "N"], labels: Integer[Array, "N"]):
 def cosine_similarity(
     x1: Float[Array, "*"],
     x2: Float[Array, "*"],
-    axis: Meta[Union[None, int, Sequence[int]]] = 1,
+    axis: Static[Union[None, int, Sequence[int]]] = 1,
     eps: float = 1e-8,
 ) -> Float[Array, "*"]:
+    """
+    Computes the cosine similarity of two tensors over the given axes.
+
+    Parameters
+    ----------
+    x1: First tensor.
+    x2: Second tensor.
+    axis: Axis or sequence of axes to compute cosine similarity over.
+    eps: Epsilon offset in the denominator
+
+    Returns
+    -------
+        Cosine similarity between x1 and x2.
+    """
     x1_sqnorm = jnp.sum(jnp.square(x1), axis=axis, keepdims=True)
     x2_sqnorm = jnp.sum(jnp.square(x2), axis=axis, keepdims=True)
 

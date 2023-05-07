@@ -7,7 +7,7 @@ from chex import mappable_dataclass
 from jax import tree_util
 from typing_extensions import dataclass_transform
 
-from .annotations import JDC_META_MARKER
+from .annotations import STATIC
 from .internal_helpers import get_type_hints_partial
 
 try:
@@ -68,8 +68,8 @@ def fzjax_dataclass(cls: type[T]) -> type[T]:
 
         fields_metadata[field.name] = tuple(getattr(field_type, "__metadata__", ()))
 
-        # Handle Meta[] annotation by moving metadata into PyTreeDef
-        if JDC_META_MARKER in fields_metadata[field.name]:
+        # Handle Static[] annotation by moving metadata into PyTreeDef
+        if STATIC in fields_metadata[field.name]:
             static_field_names.append(field.name)
             continue
 

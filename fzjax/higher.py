@@ -122,15 +122,18 @@ def pfunc_value_and_grad(
     return _new_vag_func
 
 
+FuncT = TypeVar("FuncT", bound=Callable)
+
+
 def pfunc_jit(
-    pfunc: Callable[PS, R],
+    pfunc: FuncT,
     donate_paths: Selectors = (),
     *jax_args,
     static_argnums: None = None,
     static_argnames: None = None,
     donate_argnums: None = None,
     **jax_kwargs,
-) -> Callable[PS, R]:
+) -> FuncT:
     if any(x is not None for x in (static_argnums, static_argnames, donate_argnums)):
         raise ValueError(
             "Cannot use *_argnums and *_argnames parameters, "
@@ -138,7 +141,7 @@ def pfunc_jit(
         )
 
     @wraps(pfunc)
-    def _jit_pfunc(*args: PS.args, **kwargs: PS.kwargs) -> R:
+    def _jit_pfunc(*args, **kwargs):
         if getattr(_jit_pfunc, "jax_jit", None) is None:
 
             @rename(f"{pfunc.__name__}_jit_wrapper")
@@ -167,6 +170,7 @@ def pfunc_jit(
             AnnotationPredicate(Donate) or SelectPredicate(donate_paths)
         )
         donate_params = ptree_filter(params, predicate)
+
         return _jit_pfunc.jax_jit(donate_params, params)
 
     return _jit_pfunc

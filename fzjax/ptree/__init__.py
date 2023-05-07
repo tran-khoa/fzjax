@@ -1,8 +1,8 @@
 from .annotations import (
-    JDC_DIFF_MARKER,
-    JDC_DONATE_MARKER,
-    JDC_META_MARKER,
-    JDC_NODIFF_MARKER,
+    DIFF,
+    DONATE,
+    STATIC,
+    NODIFF,
     Diff,
     Differentiable,
     Donate,
@@ -28,10 +28,10 @@ from .utils import (
 )
 
 __all__ = [
-    "JDC_META_MARKER",
-    "JDC_DIFF_MARKER",
-    "JDC_NODIFF_MARKER",
-    "JDC_DONATE_MARKER",
+    "STATIC",
+    "DIFF",
+    "NODIFF",
+    "DONATE",
     "Meta",
     "Static",
     "Donate",
