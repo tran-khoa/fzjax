@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import typing
 from dataclasses import dataclass
 from typing import Optional, ClassVar
@@ -15,7 +16,7 @@ if typing.TYPE_CHECKING:
     from jax.random import PRNGKeyArray
     from jaxtyping import Array, Float
 
-    from fzjax.initializers import Initializer
+    from fzjax.initializers import Initializer, KaimingUniformInitializer
 
 
 @pfunc_jit
@@ -58,7 +59,9 @@ class Conv2d:
         padding: str = "SAME",
         *,
         use_bias: bool = False,
-        initializer: Initializer,
+        initializer: Initializer = KaimingUniformInitializer(
+            in_axes=(1, 2, 3), a=math.sqrt(5)
+        ),
         rng: PRNGKeyArray,
     ):
         wkey, bkey = jax.random.split(rng)

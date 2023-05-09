@@ -38,7 +38,7 @@ def max_pool(
     value: jnp.ndarray,
     window_shape: Meta[Union[int, Sequence[int]]],
     strides: Meta[Union[int, Sequence[int]]],
-    channel_axis: Meta[Optional[int]] = -1,
+    channel_axis: Meta[Optional[int]] = 1,
 ) -> jnp.ndarray:
     """
     Adapted from dm-haiku. Max pool.
