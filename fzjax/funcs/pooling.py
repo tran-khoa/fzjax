@@ -11,7 +11,7 @@ from fzjax.higher import pfunc_jit
 from fzjax.ptree import Meta
 
 
-def _pool_infer_shape(
+def pool_infer_shape(
     x: jnp.ndarray,
     size: int | Sequence[int],
     channel_axis: int | None = -1,
@@ -54,7 +54,7 @@ def max_pool(
     Returns:
         Pooled result. Same rank as value.
     """
-    window_shape = _pool_infer_shape(value, window_shape, channel_axis)
-    strides = _pool_infer_shape(value, strides, channel_axis)
+    window_shape = pool_infer_shape(value, window_shape, channel_axis)
+    strides = pool_infer_shape(value, strides, channel_axis)
 
     return lax.reduce_window(value, -jnp.inf, lax.max, window_shape, strides, "SAME")
