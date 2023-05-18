@@ -1,25 +1,29 @@
 from __future__ import annotations
 
 import dataclasses
+from dataclasses import dataclass
 from functools import wraps
-from typing import Callable, Collection, TypeVar, Union
+from typing import Any, Callable, Collection, Generic, Optional, TypeVar, Union
 
 import jax
+import jax.numpy as jnp
+import optax
 from chex import ArrayTree
+from jaxtyping import Array, Float, PyTree
 from typing_extensions import ParamSpec
 
 from fzjax.ptree import (
     AnnotationPredicate,
     Donate,
     SelectPredicate,
-    ptree_differentiable,
+    fzjax_dataclass, ptree_differentiable,
     ptree_filter,
     ptree_update,
 )
 from fzjax.ptree.internal_helpers import fzjax_datacls_from_func, get_func_signature
 from fzjax.ptree.utils import NonNullPredicate
 
-P = TypeVar("P")
+P = ParamSpec("P")
 PS = ParamSpec("PS")
 
 R = TypeVar("R", ArrayTree, tuple[ArrayTree, ArrayTree])
@@ -174,3 +178,67 @@ def pfunc_jit(
         return _jit_pfunc.jax_jit(donate_params, params)
 
     return _jit_pfunc
+
+
+@fzjax_dataclass
+@dataclass(frozen=True)
+class BackpropOut:
+    updated: dict[str, PyTree]
+    extra: Any
+    loss: Float[Array, ""]
+    opt_state: optax.OptState
+
+
+@dataclass
+class BackpropFn(Generic[P]):
+    value_and_grad: Callable[P, tuple[tuple[Any], Any]]
+    optimizer: optax.GradientTransformation
+    has_aux: bool
+
+    def __call__(self,
+                 lr: Union[jnp.ndarray, float],
+                 opt_state: Optional[optax.OptState] = None,
+                 **kwargs: P.kwargs) -> BackpropOut:
+        optimizer = optax.chain(self.optimizer, optax.scale(-lr))
+
+        extra = None
+        if self.has_aux:
+            ((loss, extra), grads), diff_params = self.value_and_grad(**kwargs)
+        else:
+            (loss, grads), diff_params = self.value_and_grad(**kwargs)
+
+        if opt_state is None:
+            opt_state = optimizer.init(diff_params)
+        updates, opt_state = optimizer.update(grads, opt_state)
+        args_updated = set(k.split(".")[0] for k in updates.keys())
+
+        updated = optax.apply_updates(diff_params, updates)
+        updated = ptree_update({k: v for k, v in kwargs.items() if k in args_updated},
+                               updated)
+
+        return BackpropOut(
+            updated=updated,
+            extra=extra,
+            loss=loss,
+            opt_state=opt_state,
+        )
+
+
+def pfunc_update_backprop(
+    loss_fn: Callable[P, Union[Float[Array, ""], tuple[Float[Array, ""], Any]]],
+    optimizer: optax.GradientTransformation,
+    diff_paths: Selectors = (),
+    donate_paths: Selectors = (),
+    has_aux: bool = False,
+) -> BackpropFn[P]:
+
+    loss_fn = pfunc_jit(loss_fn, donate_paths,)
+
+    return BackpropFn(
+        value_and_grad=pfunc_value_and_grad(loss_fn,
+                                            diff_paths=diff_paths,
+                                            return_diff_params=True,
+                                            has_aux=has_aux),
+        optimizer=optimizer,
+        has_aux=has_aux,
+    )

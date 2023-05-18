@@ -11,12 +11,12 @@ import jax.random
 
 from fzjax.higher import pfunc_jit
 from fzjax.ptree import Differentiable, Meta, fzjax_dataclass
+from fzjax.initializers import Initializer, KaimingUniformInitializer
 
 if typing.TYPE_CHECKING:
     from jax.random import PRNGKeyArray
     from jaxtyping import Array, Float
 
-    from fzjax.initializers import Initializer, KaimingUniformInitializer
 
 
 @pfunc_jit

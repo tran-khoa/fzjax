@@ -135,7 +135,10 @@ def fzjax_datacls_from_func(func: Callable) -> Any:
 
         # noinspection PyProtectedMember
         if param.annotation != inspect._empty:
-            annotation = eval(param.annotation, base_globals)
+            if isinstance(param.annotation, str):
+                annotation = eval(param.annotation, base_globals)
+            else:
+                annotation = param.annotation
         # noinspection PyProtectedMember
         if param.default != inspect._empty:
             default = param.default

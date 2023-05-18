@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
 @fzjax_dataclass
 @dataclass(frozen=True)
 class Linear:
-    weights: Differentiable[Float[Array, "OutC InC"]]
+    weights: Differentiable[Float[Array, "InC OutC"]]
     biases: Differentiable[Optional[Float[Array, "OutC"]]]
 
     @classmethod
